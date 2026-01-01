@@ -16,7 +16,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
-        setTunnelNetworkSettings(options?["settings"] as? NETunnelNetworkSettings)
+        self.setTunnelNetworkSettings(options?["settings"] as? NETunnelNetworkSettings)
         
         let ret = (options?["config"] as? String)?.withCString { strPtr in
             return run_network_instance(strPtr)
