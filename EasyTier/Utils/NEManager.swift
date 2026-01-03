@@ -66,7 +66,7 @@ class NEManager: ObservableObject {
         manager.localizedDescription = "EasyTier"
         let tunnelProtocol = NETunnelProviderProtocol()
         tunnelProtocol.providerBundleIdentifier = "site.yinmo.easytier.tunnel"
-        tunnelProtocol.serverAddress = "localhost"
+        tunnelProtocol.serverAddress = "0.0.0.0"
         manager.protocolConfiguration = tunnelProtocol
         manager.isEnabled = true
         do {
@@ -120,7 +120,17 @@ class NEManager: ObservableObject {
         
         var options: [String : NSObject] = [:]
         let config = Config(from: profile)
-        options["name"] = config.instanceName as NSObject
+
+        if let ipv4 = config.ipv4 {
+            options["ipv4"] = ipv4 as NSString
+        }
+        if let ipv6 = config.ipv6 {
+            options["ipv6"] = ipv6 as NSString
+        }
+        if let mtu = profile.mtu {
+            options["mtu"] = mtu as NSNumber
+        }
+
         let encoded: String
         do {
             encoded = try TOMLEncoder().encode(config).string ?? ""
@@ -129,7 +139,7 @@ class NEManager: ObservableObject {
             throw error
         }
         print("[NEManager] connect() config: \(encoded)")
-        options["config"] = encoded as NSObject
+        options["config"] = encoded as NSString
         do {
             try manager.connection.startVPNTunnel(options: options)
         } catch {
