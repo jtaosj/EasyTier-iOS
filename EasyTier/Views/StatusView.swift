@@ -27,10 +27,10 @@ struct StatusView<Manager: NEManagerProtocol>: View {
             Section("Local") {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(status?.myNodeInfo.hostname ?? "...")
+                        Text(status?.myNodeInfo?.hostname ?? "N/A")
                             .font(.title2)
                             .fontWeight(.bold)
-                        Text("v\(status?.myNodeInfo.version ?? "...")")
+                        Text("v\(status?.myNodeInfo?.version ?? "N/A")")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -53,12 +53,12 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 HStack(spacing: 42) {
                     StatItem(
                         label: "Virtual IP",
-                        value: status?.myNodeInfo.virtualIPv4.description ?? "...",
+                        value: status?.myNodeInfo?.virtualIPv4?.description ?? "N/A",
                         icon: "network"
                     )
                     StatItem(
                         label: "NAT Type",
-                        value: status?.myNodeInfo.stunInfo.udpNATType.description ?? "...",
+                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? "N/A",
                         icon: "shield"
                     )
                 }
@@ -159,7 +159,7 @@ struct PeerRowView: View {
                                 infoLine1.append(Array(Set(types)).sorted().joined(separator: "&").uppercased())
                             }
                         }
-                        return Text(infoLine1.joined(separator: ", "))
+                        return Text(infoLine1.joined(separator: " "))
                     }()
                     
                     if let ip = pair.route.ipv4Addr {
@@ -307,7 +307,7 @@ struct StatItem: View {
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.medium)
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

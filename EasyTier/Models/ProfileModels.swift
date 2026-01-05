@@ -9,14 +9,17 @@ final class ProfileSummary {
     
     @Relationship(deleteRule: .cascade) var profile: NetworkProfile
     
-    init(name: String, context: ModelContext) {
-        let id = UUID()
+    convenience init(name: String, context: ModelContext) {
+        self.init(id: UUID(), name: name)
+        context.insert(self)
+    }
+    
+    init(id: UUID, name: String) {
         self.id = id
         self.name = name
         self.createdAt = Date()
         let profile = NetworkProfile(id: id)
         self.profile = profile
-        context.insert(profile)
     }
 }
 

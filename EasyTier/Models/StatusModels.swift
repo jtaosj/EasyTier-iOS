@@ -87,11 +87,11 @@ struct NetworkStatus: Codable {
                 case interfaceIPv6s = "interface_ipv6s"
             }
         }
-        var virtualIPv4: IPv4CIDR
+        var virtualIPv4: IPv4CIDR?
         var hostname: String
         var version: String
         var ips: IPs?
-        var stunInfo: STUNInfo
+        var stunInfo: STUNInfo?
         var listeners: [Url]
         var vpnPortalCfg: String?
 
@@ -204,7 +204,7 @@ struct NetworkStatus: Codable {
     }
 
     var devName: String
-    var myNodeInfo: NodeInfo
+    var myNodeInfo: NodeInfo?
     var events: [String]
     var routes: [Route]
     var peers: [PeerInfo]

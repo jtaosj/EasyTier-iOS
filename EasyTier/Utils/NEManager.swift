@@ -203,11 +203,10 @@ class NEManager: NEManagerProtocol {
 class MockNEManager: NEManagerProtocol {
     @Published var status: NEVPNStatus = .disconnected
     @Published var connectedDate: Date? = nil
-    @Published var isLoading: Bool = false
+    @Published var isLoading: Bool = true
 
     // Simulate a successful load
     func load() async throws {
-        isLoading = true
         try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay
         isLoading = false
         status = .disconnected
@@ -215,15 +214,11 @@ class MockNEManager: NEManagerProtocol {
 
     // Simulate connecting
     func connect(profile: NetworkProfile) async throws {
-        isLoading = true
         status = .connecting
-        
         // Simulate network delay
         try await Task.sleep(nanoseconds: 2_000_000_000)
-        
         status = .connected
         connectedDate = Date()
-        isLoading = false
     }
 
     func disconnect() async {

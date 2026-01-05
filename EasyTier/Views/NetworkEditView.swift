@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct NetworkEditView: View {
-    @Binding var profile: NetworkProfile
+    @Bindable var summary: ProfileSummary
     @State var sel = 0
 
     var body: some View {
@@ -21,18 +21,18 @@ struct NetworkEditView: View {
     private var basicSettings: some View {
         Group {
             Section("Virtual IPv4") {
-                Toggle("DHCP", isOn: $profile.dhcp)
+                Toggle("DHCP", isOn: $summary.profile.dhcp)
 
-                if !profile.dhcp {
+                if !summary.profile.dhcp {
                     HStack {
                         TextField(
                             "IPv4 Address",
-                            text: $profile.virtualIPv4.ip
+                            text: $summary.profile.virtualIPv4.ip
                         )
                         Text("/")
                         TextField(
                             "Length",
-                            value: $profile.virtualIPv4.length,
+                            value: $summary.profile.virtualIPv4.length,
                             formatter: NumberFormatter()
                         )
                         .frame(width: 50)
@@ -43,21 +43,21 @@ struct NetworkEditView: View {
 
             Section("Network") {
                 LabeledContent("Name") {
-                    TextField("easytier", text: $profile.networkName)
+                    TextField("easytier", text: $summary.profile.networkName)
                         .multilineTextAlignment(.trailing)
                 }
 
                 LabeledContent("Secret") {
                     SecureField(
                         "Empty",
-                        text: $profile.networkSecret
+                        text: $summary.profile.networkSecret
                     )
                     .multilineTextAlignment(.trailing)
                 }
 
                 Picker(
                     "Networking Method",
-                    selection: $profile.networkingMethod
+                    selection: $summary.profile.networkingMethod
                 ) {
                     ForEach(NetworkProfile.NetworkingMethod.allCases) {
                         method in
@@ -66,10 +66,10 @@ struct NetworkEditView: View {
                 }
                 .pickerStyle(.palette)
 
-                switch profile.networkingMethod {
+                switch summary.profile.networkingMethod {
                 case .publicServer:
                     LabeledContent("Server") {
-                        Text(profile.publicServerURL)
+                        Text(summary.profile.publicServerURL)
                             .multilineTextAlignment(.trailing)
                     }
                 case .manual:
@@ -80,12 +80,12 @@ struct NetworkEditView: View {
                         TextEditor(
                             text: Binding(
                                 get: {
-                                    profile.peerURLs.joined(
+                                    summary.profile.peerURLs.joined(
                                         separator: "\n"
                                     )
                                 },
                                 set: {
-                                    profile.peerURLs = $0.split(
+                                    summary.profile.peerURLs = $0.split(
                                         whereSeparator: \.isNewline
                                     ).map(String.init)
                                 }
@@ -107,31 +107,31 @@ struct NetworkEditView: View {
         Form {
             Section("General") {
                 LabeledContent("Hostname") {
-                    TextField("Default", text: $profile.hostname.bound)
+                    TextField("Default", text: $summary.profile.hostname.bound)
                         .multilineTextAlignment(.trailing)
                 }
 
                 // TODO: FIXME
 //                MultiLineTextField(
 //                    title: "Proxy CIDRs",
-//                    items: $profile.proxyCIDRs
+//                    items: $summary.profile.proxyCIDRs
 //                )
 
                 Toggle(
                     "Enable VPN Portal",
-                    isOn: $profile.enableVPNPortal
+                    isOn: $summary.profile.enableVPNPortal
                 )
-                if profile.enableVPNPortal {
+                if summary.profile.enableVPNPortal {
                     HStack {
                         TextField(
                             "Client Network Address",
-                            text: $profile
+                            text: $summary.profile
                                 .vpnPortalClientCIDR.ip
                         )
                         Text("/")
                         TextField(
                             "Length",
-                            value: $profile
+                            value: $summary.profile
                                 .vpnPortalClientCIDR.length,
                             formatter: NumberFormatter()
                         )
@@ -139,18 +139,18 @@ struct NetworkEditView: View {
                     }
                     TextField(
                         "Listen Port",
-                        value: $profile.vpnPortalListenPort,
+                        value: $summary.profile.vpnPortalListenPort,
                         formatter: NumberFormatter()
                     )
                 }
 
                 MultiLineTextField(
                     title: "Listener URLs",
-                    items: $profile.listenerURLs
+                    items: $summary.profile.listenerURLs
                 )
 
                 LabeledContent("Device Name") {
-                    TextField("Default", text: $profile.devName)
+                    TextField("Default", text: $summary.profile.devName)
                         .multilineTextAlignment(.trailing)
                 }
 
@@ -158,7 +158,7 @@ struct NetworkEditView: View {
                     Text("MTU")
                     TextField(
                         "MTU",
-                        value: $profile.mtu,
+                        value: $summary.profile.mtu,
                         formatter: NumberFormatter()
                     )
                     .help(
@@ -168,51 +168,51 @@ struct NetworkEditView: View {
 
                 Toggle(
                     "Enable Relay Network Whitelist",
-                    isOn: $profile.enableRelayNetworkWhitelist
+                    isOn: $summary.profile.enableRelayNetworkWhitelist
                 )
-                if profile.enableRelayNetworkWhitelist {
+                if summary.profile.enableRelayNetworkWhitelist {
                     MultiLineTextField(
                         title: "Relay Network Whitelist",
-                        items: $profile.relayNetworkWhitelist
+                        items: $summary.profile.relayNetworkWhitelist
                     )
                 }
 
                 Toggle(
                     "Enable Manual Routes",
-                    isOn: $profile.enableManualRoutes
+                    isOn: $summary.profile.enableManualRoutes
                 )
-                if profile.enableManualRoutes {
+                if summary.profile.enableManualRoutes {
                     MultiLineTextField(
                         title: "Manual Routes",
-                        items: $profile.routes
+                        items: $summary.profile.routes
                     )
                 }
 
                 Toggle(
                     "Enable SOCKS5 Server",
-                    isOn: $profile.enableSocks5
+                    isOn: $summary.profile.enableSocks5
                 )
-                if profile.enableSocks5 {
+                if summary.profile.enableSocks5 {
                     TextField(
                         "SOCKS5 Port",
-                        value: $profile.socks5Port,
+                        value: $summary.profile.socks5Port,
                         formatter: NumberFormatter()
                     )
                 }
 
                 MultiLineTextField(
                     title: "Exit Nodes",
-                    items: $profile.exitNodes
+                    items: $summary.profile.exitNodes
                 )
                 MultiLineTextField(
                     title: "Mapped Listeners",
-                    items: $profile.mappedListeners
+                    items: $summary.profile.mappedListeners
                 )
             }
 
             Section("Feature") {
                 ForEach(NetworkProfile.boolFlags) { flag in
-                    Toggle(isOn: binding($profile, to: flag.keyPath)) {
+                    Toggle(isOn: binding($summary.profile, to: flag.keyPath)) {
                         Text(flag.label)
                         if let help = flag.help {
                             Text(help)
@@ -226,7 +226,7 @@ struct NetworkEditView: View {
 
     fileprivate var portForwardsSettings: some View {
         Form {
-            ForEach($profile.portForwards) { $forward in
+            ForEach($summary.profile.portForwards) { $forward in
                 VStack {
                     HStack {
                         Picker("", selection: $forward.proto) {
@@ -239,7 +239,7 @@ struct NetworkEditView: View {
                         Spacer()
 
                         Button(action: {
-                            profile.portForwards.removeAll {
+                            summary.profile.portForwards.removeAll {
                                 $0.id == forward.id
                             }
                         }) {
@@ -279,7 +279,7 @@ struct NetworkEditView: View {
                 "Add Port Forward",
                 systemImage: "plus",
                 action: {
-                    profile.portForwards.append(NetworkProfile.PortForwardSetting())
+                    summary.profile.portForwards.append(NetworkProfile.PortForwardSetting())
                 }
             )
             .frame(maxWidth: .infinity, alignment: .center)
@@ -463,18 +463,18 @@ extension NetworkProfile {
     ]
 }
 
-struct NetworkConfigurationView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var profile = NetworkProfile(id: UUID())
-        NavigationView {
-            NetworkEditView(profile: $profile)
-        }
-    }
-}
-
-struct Advanced_Settings_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var profile = NetworkProfile(id: UUID())
-        NetworkEditView(profile: $profile).advancedSettings
-    }
-}
+//struct NetworkConfigurationView_Previews: PreviewProvider {
+//    static var previews: some View {
+//        @State var summary = ProfileSummary(id: UUID(), name: "example")
+//        NavigationView {
+//            NetworkEditView(summary: $summary)
+//        }
+//    }
+//}
+//
+//struct Advanced_Settings_Previews: PreviewProvider {
+//    static var previews: some View {
+//        @State var summary = ProfileSummary(id: UUID(), name: "example")
+//        NetworkEditView(summary: $summary).advancedSettings
+//    }
+//}
