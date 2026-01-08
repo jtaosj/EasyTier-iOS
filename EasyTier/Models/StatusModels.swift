@@ -152,25 +152,12 @@ struct NetworkStatus: Codable {
     }
 
     struct NodeInfo: Codable {
-        struct IPs: Codable {
-            var publicIPv4: IPv4Addr?
-            var interfaceIPv4s: [IPv4Addr]
-            var publicIPv6: IPv6Addr?
-            var interfaceIPv6s: [IPv6Addr]
-
-            enum CodingKeys: String, CodingKey {
-                case publicIPv4 = "public_ipv4"
-                case interfaceIPv4s = "interface_ipv4s"
-                case publicIPv6 = "public_ipv6"
-                case interfaceIPv6s = "interface_ipv6s"
-            }
-        }
         struct IPList: Codable {
             var publicIPv4: IPv4Addr?
-            var interfaceIPv4s: [IPv4Addr]
+            var interfaceIPv4s: [IPv4Addr]?
             var publicIPv6: IPv6Addr?
-            var interfaceIPv6s: [IPv6Addr]
-            var listeners: [Url]
+            var interfaceIPv6s: [IPv6Addr]?
+            var listeners: [Url]?
 
             enum CodingKeys: String, CodingKey {
                 case publicIPv4 = "public_ipv4"
@@ -180,32 +167,20 @@ struct NetworkStatus: Codable {
                 case listeners
             }
         }
-        var peerId: Int? = nil
         var virtualIPv4: IPv4CIDR?
-        var ipv4Addr: String? = nil
-        var proxyCIDRs: [String]? = nil
         var hostname: String
         var version: String
-        var ips: IPs?
+        var ips: IPList?
         var stunInfo: STUNInfo?
-        var instId: String? = nil
         var listeners: [Url]? = nil
-        var config: String? = nil
-        var featureFlag: PeerFeatureFlag? = nil
-        var ipList: IPList? = nil
         var vpnPortalCfg: String?
 
         enum CodingKeys: String, CodingKey {
-            case peerId = "peer_id"
             case virtualIPv4 = "virtual_ipv4"
-            case ipv4Addr = "ipv4_addr"
-            case proxyCIDRs = "proxy_cidrs"
-            case hostname, version, ips, listeners
+            case hostname, version
+            case ips
             case stunInfo = "stun_info"
-            case instId = "inst_id"
-            case config
-            case featureFlag = "feature_flag"
-            case ipList = "ip_list"
+            case listeners
             case vpnPortalCfg = "vpn_portal_cfg"
         }
     }

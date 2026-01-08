@@ -8,6 +8,8 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     @State var status: NetworkStatus?
     @State var selectedInfoKind: InfoKind = .peerInfo
     @State var selectedPeerRoutePair: NetworkStatus.PeerRoutePair?
+    @State var showNodeInfo = false
+    @State var showStunInfo = false
     
     var name: String
     
@@ -55,16 +57,27 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 }
 
                 HStack(spacing: 42) {
-                    StatItem(
-                        label: "Virtual IP",
-                        value: status?.myNodeInfo?.virtualIPv4?.description ?? "N/A",
-                        icon: "network"
-                    )
-                    StatItem(
-                        label: "NAT Type",
-                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? "N/A",
-                        icon: "shield"
-                    )
+                    Button {
+                        showNodeInfo = true
+                    } label: {
+                        StatItem(
+                            label: "Virtual IP",
+                            value: status?.myNodeInfo?.virtualIPv4?.description ?? "N/A",
+                            icon: "network"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
+                        showStunInfo = true
+                    } label: {
+                        StatItem(
+                            label: "NAT Type",
+                            value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? "N/A",
+                            icon: "shield"
+                        )
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
@@ -119,6 +132,12 @@ struct StatusView<Manager: NEManagerProtocol>: View {
         }
         .sheet(item: $selectedPeerRoutePair) { pair in
             PeerConnDetailSheet(pair: pair)
+        }
+        .sheet(isPresented: $showNodeInfo) {
+            NodeInfoSheet(nodeInfo: status?.myNodeInfo)
+        }
+        .sheet(isPresented: $showStunInfo) {
+            StunInfoSheet(stunInfo: status?.myNodeInfo?.stunInfo)
         }
     }
 }
@@ -338,6 +357,7 @@ struct StatItem: View {
                 .fontWeight(.medium)
                 .padding(.horizontal, 8)
         }
+        .contentShape(Rectangle())
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
@@ -469,14 +489,6 @@ struct TimelineRow: View {
     }
 }
 
-struct StatusView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        StatusView<MockNEManager>(name: "Example")
-            .environmentObject(manager)
-    }
-}
-
 struct PeerConnDetailSheet: View {
     let pair: NetworkStatus.PeerRoutePair
 
@@ -548,3 +560,128 @@ struct PeerConnDetailSheet: View {
         return value ? "Yes" : "No"
     }
 }
+
+struct NodeInfoSheet: View {
+    let nodeInfo: NetworkStatus.NodeInfo?
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let nodeInfo {
+                    Section("Basic Info") {
+                        LabeledContent("Hostname", value: nodeInfo.hostname)
+                        LabeledContent("Version", value: nodeInfo.version)
+                        if let virtualIPv4 = nodeInfo.virtualIPv4 {
+                            LabeledContent("Virtual IPv4", value: virtualIPv4.description)
+                        }
+                    }
+                    
+                    if let ips = nodeInfo.ips {
+                        if ips.publicIPv4 != nil || ips.publicIPv6 != nil {
+                            Section("IP Information") {
+                                if let publicIPv4 = ips.publicIPv4 {
+                                    LabeledContent("Public IPv4", value: publicIPv4.description)
+                                }
+                                if let publicIPv6 = ips.publicIPv6 {
+                                    LabeledContent("Public IPv6", value: publicIPv6.description)
+                                }
+                            }
+                        }
+                        if let v4s = ips.interfaceIPv4s, !v4s.isEmpty {
+                            Section("Interface IPv4s") {
+                                ForEach(v4s, id: \.hashValue) { ip in
+                                    Text(ip.description)
+                                        .textSelection(.enabled)
+                                }
+                            }
+                        }
+                        if let v6s = ips.interfaceIPv6s, !v6s.isEmpty {
+                            Section("Interface IPv6s") {
+                                ForEach(v6s, id: \.hashValue) { ip in
+                                    Text(ip.description)
+                                        .textSelection(.enabled)
+                                }
+                            }
+                        }
+                    }
+                    
+                    if let listeners = nodeInfo.listeners, !listeners.isEmpty {
+                        Section("Listeners") {
+                            ForEach(listeners, id: \.url) { listener in
+                                Text(listener.url)
+                                    .textSelection(.enabled)
+                            }
+                        }
+                    }
+                } else {
+                    Section {
+                        Text("No node information available")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("Node Information")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+struct StunInfoSheet: View {
+    let stunInfo: NetworkStatus.STUNInfo?
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let stunInfo {
+                    Section("NAT Types") {
+                        LabeledContent("UDP NAT Type", value: stunInfo.udpNATType.description)
+                        LabeledContent("TCP NAT Type", value: stunInfo.tcpNATType.description)
+                    }
+                    
+                    Section("Details") {
+                        LabeledContent("Last Update", value: formatDate(stunInfo.lastUpdateTime))
+                        if let minPort = stunInfo.minPort {
+                            LabeledContent("Min Port", value: String(minPort))
+                        }
+                        if let maxPort = stunInfo.maxPort {
+                            LabeledContent("Max Port", value: String(maxPort))
+                        }
+                    }
+                    
+                    if !stunInfo.publicIPs.isEmpty {
+                        Section("Public IPs") {
+                            ForEach(stunInfo.publicIPs, id: \.self) { ip in
+                                Text(ip)
+                                    .textSelection(.enabled)
+                            }
+                        }
+                    }
+                } else {
+                    Section {
+                        Text("No STUN information available")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .navigationTitle("STUN Information")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+    
+    private func formatDate(_ timestamp: TimeInterval) -> String {
+        let date = Date(timeIntervalSince1970: timestamp)
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .medium
+        return formatter.string(from: date)
+    }
+}
+
+struct StatusView_Previews: PreviewProvider {
+    static var previews: some View {
+        @StateObject var manager = MockNEManager()
+        StatusView<MockNEManager>(name: "Example")
+            .environmentObject(manager)
+    }
+}
+
