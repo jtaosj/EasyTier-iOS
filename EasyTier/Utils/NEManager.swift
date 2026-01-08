@@ -137,16 +137,6 @@ class NEManager: NEManagerProtocol {
         var options: [String : NSObject] = [:]
         let config = NetworkConfig(from: profile)
 
-        if let ipv4 = config.ipv4 {
-            options["ipv4"] = ipv4 as NSString
-        }
-        if let ipv6 = config.ipv6 {
-            options["ipv6"] = ipv6 as NSString
-        }
-        if let mtu = profile.mtu {
-            options["mtu"] = mtu as NSNumber
-        }
-
         let encoded: String
         do {
             encoded = try TOMLEncoder().encode(config).string ?? ""
@@ -293,4 +283,3 @@ class MockNEManager: NEManagerProtocol {
         )
     }
 }
-

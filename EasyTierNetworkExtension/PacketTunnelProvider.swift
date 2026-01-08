@@ -4,12 +4,15 @@ import Foundation
 
 let appName = "site.yinmo.easytier.tunnel"
 let appGroupID = "group.site.yinmo.easytier"
+let magicDNSIP = "100.100.100.101"
+let magicDNSCIDR = "100.100.100.101/32"
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
     // Hold a weak reference to the current provider for C callback bridging
     private static weak var current: PacketTunnelProvider?
 
     let logger = Logger(subsystem: appName, category: "swift")
+    private var lastOptions: [String: NSObject]?
     
     private var tunnelFileDescriptor: Int32? {
         logger.warning("tunnelFileDescriptor: use fallback")
@@ -125,17 +128,30 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     
     func prepareSettings(_ options: [String : NSObject]) -> NEPacketTunnelNetworkSettings {
         let settings = NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "0.0.0.0")
-        
-        if let ipv4CIDR = (options["ipv4"] as? String)?.split(separator: "/"), ipv4CIDR.count == 2 {
-            let ip = ipv4CIDR[0], cidrStr = ipv4CIDR[1]
-            if let cidr = Int(cidrStr),
-                let mask = cidrToSubnetMask(cidr) {
-                settings.ipv4Settings = .init(
-                    addresses: [String(ip)],
-                    subnetMasks: [mask]
-                )
-            }
+        let runningInfo = fetchRunningInfo()
+        if runningInfo == nil {
+            logger.warning("prepareSettings() running info is nil")
         }
+
+        if let ipv4 = runningInfo?.myNodeInfo?.virtualIPv4,
+           let mask = cidrToSubnetMask(ipv4.networkLength) {
+            logger.info("prepareSettings() ipv4 \(ipv4.address.description)/\(ipv4.networkLength)")
+            let ipv4Settings = NEIPv4Settings(
+                addresses: [ipv4.address.description],
+                subnetMasks: [mask]
+            )
+            let routes = buildIPv4Routes(from: runningInfo)
+            if routes.isEmpty {
+                logger.warning("prepareSettings() no ipv4 routes")
+            } else {
+                logger.info("prepareSettings() ipv4 routes: \(routes.count)")
+            }
+            if !routes.isEmpty {
+                ipv4Settings.includedRoutes = routes
+            }
+            settings.ipv4Settings = ipv4Settings
+        }
+
         if let ipv6CIDR = (options["ipv6"] as? String)?.split(separator: "/"), ipv6CIDR.count == 2 {
             let ip = ipv6CIDR[0], cidrStr = ipv6CIDR[1]
             if let cidr = Int(cidrStr) {
@@ -145,11 +161,118 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 )
             }
         }
-        if let mtu = options["mtu"] as? NSNumber {
-            settings.mtu = mtu
+
+        if let dns = buildDNSServers(from: runningInfo, options: options) {
+            logger.info("prepareSettings() dns: \(dns)")
+            settings.dnsSettings = NEDNSSettings(servers: dns)
         }
-        
+
         return settings
+    }
+
+    private func fetchRunningInfo() -> RunningInfo? {
+        var infoPtr: UnsafePointer<CChar>? = nil
+        var errPtr: UnsafePointer<CChar>? = nil
+        if get_running_info(&infoPtr, &errPtr) == 0, let info = extractRustString(infoPtr) {
+            guard let data = info.data(using: .utf8) else {
+                logger.error("fetchRunningInfo() invalid utf8 data")
+                return nil
+            }
+            do {
+                let decoded = try JSONDecoder().decode(RunningInfo.self, from: data)
+                logger.info("fetchRunningInfo() routes: \(decoded.routes.count)")
+                return decoded
+            } catch {
+                logger.error("fetchRunningInfo() json decode failed: \(error, privacy: .public)")
+            }
+        } else if let err = extractRustString(errPtr) {
+            logger.error("fetchRunningInfo() failed: \(err, privacy: .public)")
+        }
+        return nil
+    }
+
+    private func buildIPv4Routes(from info: RunningInfo?) -> [NEIPv4Route] {
+        guard let info else { return [] }
+        var cidrs = Set<String>()
+        for route in info.routes {
+            for cidr in route.proxyCIDRs {
+                if let normalized = normalizeCIDR(cidr) {
+                    cidrs.insert(normalized)
+                }
+            }
+        }
+        if let dns = buildDNSServers(from: info, options: nil),
+           dns.contains(magicDNSIP) {
+            cidrs.insert(magicDNSCIDR)
+        }
+        if cidrs.isEmpty {
+            logger.warning("buildIPv4Routes() no proxy cidrs")
+        }
+        return cidrs.compactMap { cidr in
+            let parts = cidr.split(separator: "/")
+            guard parts.count == 2, let maskLen = Int(parts[1]),
+                  let mask = cidrToSubnetMask(maskLen) else {
+                logger.warning("buildIPv4Routes() invalid cidr: \(cidr)")
+                return nil
+            }
+            return NEIPv4Route(destinationAddress: String(parts[0]), subnetMask: mask)
+        }
+    }
+
+    private func buildDNSServers(from info: RunningInfo?, options: [String: NSObject]?) -> [String]? {
+        if let dns = options?["dns"] as? String, !dns.isEmpty {
+            logger.info("buildDNSServers() use options dns: \(dns)")
+            return [dns]
+        }
+        guard let info else { return nil }
+        let hasMagicDNSRoute = info.routes.contains { route in
+            route.proxyCIDRs.contains { normalizeCIDR($0) == magicDNSCIDR }
+        }
+        if hasMagicDNSRoute {
+            logger.info("buildDNSServers() enable magic dns")
+        }
+        return hasMagicDNSRoute ? [magicDNSIP] : nil
+    }
+
+    private func normalizeCIDR(_ cidr: String) -> String? {
+        if cidr.contains("/") {
+            return cidr
+        }
+        guard !cidr.isEmpty else { return nil }
+        return "\(cidr)/32"
+    }
+
+    private func handleRunningInfoChanged() {
+        logger.info("handleRunningInfoChanged(): triggered")
+        guard let options = lastOptions else {
+            logger.warning("handleRunningInfoChanged() options is nil")
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.setTunnelNetworkSettings(self.prepareSettings(options)) { error in
+                if let error {
+                    self.logger.error("handleRunningInfoChanged() setTunnelNetworkSettings failed: \(error, privacy: .public)")
+                    self.notifyHostAppError(error.localizedDescription)
+                } else {
+                    self.logger.info("handleRunningInfoChanged() updated tunnel settings")
+                }
+            }
+        }
+    }
+
+    private func registerRunningInfoCallback() {
+        let infoChangedCallback: @convention(c) () -> Void = {
+            PacketTunnelProvider.current?.handleRunningInfoChanged()
+        }
+        var errPtr: UnsafePointer<CChar>? = nil
+        let ret = register_running_info_callback(infoChangedCallback, &errPtr)
+        if ret != 0 {
+            let err = extractRustString(errPtr)
+            logger.error("registerRunningInfoCallback() failed: \(err ?? "Unknown", privacy: .public)")
+        } else {
+            logger.info("registerRunningInfoCallback() registered")
+        }
     }
 
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
@@ -168,6 +291,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             completionHandler("config is empty")
             return
         }
+        self.lastOptions = options
         initRustLogger()
         var errPtr: UnsafePointer<CChar>? = nil
         let ret = config.withCString { strPtr in
@@ -194,6 +318,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 logger.info("startTunnel() registered FFI stop callback")
             }
         }
+        registerRunningInfoCallback()
 
         self.setTunnelNetworkSettings(prepareSettings(options)) { [weak self] error in
             if let error {
@@ -261,3 +386,47 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
 
 extension String: @retroactive Error {}
 
+private struct RunningInfo: Decodable {
+    var myNodeInfo: RunningNodeInfo?
+    var routes: [RunningRoute]
+
+    enum CodingKeys: String, CodingKey {
+        case myNodeInfo = "my_node_info"
+        case routes
+    }
+}
+
+private struct RunningNodeInfo: Decodable {
+    var virtualIPv4: RunningIPv4CIDR?
+
+    enum CodingKeys: String, CodingKey {
+        case virtualIPv4 = "virtual_ipv4"
+    }
+}
+
+private struct RunningRoute: Decodable {
+    var proxyCIDRs: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case proxyCIDRs = "proxy_cidrs"
+    }
+}
+
+private struct RunningIPv4CIDR: Decodable {
+    var address: RunningIPv4Addr
+    var networkLength: Int
+
+    enum CodingKeys: String, CodingKey {
+        case address
+        case networkLength = "network_length"
+    }
+}
+
+private struct RunningIPv4Addr: Decodable {
+    var addr: UInt32
+
+    var description: String {
+        let ip = addr
+        return "\((ip >> 24) & 0xFF).\((ip >> 16) & 0xFF).\((ip >> 8) & 0xFF).\(ip & 0xFF)"
+    }
+}

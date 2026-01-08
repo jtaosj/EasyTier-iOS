@@ -489,6 +489,46 @@ struct TimelineRow: View {
     }
 }
 
+struct TimelineEntry: Identifiable {
+    var id: String { self.original }
+    let date: Date?
+    let name: String?
+    let payload: String
+    let original: String
+    
+    // Parser
+    static func parse(_ rawLines: [String]) -> [TimelineEntry] {
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        return rawLines.compactMap { line in
+            guard let data = line.data(using: .utf8),
+                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let timeStr = json["time"] as? String,
+                  let date = isoFormatter.date(from: timeStr),
+                  let eventData = json["event"] else {
+                return TimelineEntry(date: nil, name: nil, payload: line, original: line)
+            }
+            
+            let name: String?
+            let payload: Any
+            if let eventData = eventData as? [String: Any], eventData.count == 1, let name_ = eventData.keys.first, let payload_ = eventData[name_] {
+                name = name_
+                payload = payload_
+            } else {
+                name = nil
+                payload = eventData
+            }
+            
+            if let prettyData = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .withoutEscapingSlashes, .fragmentsAllowed]),
+               let prettyString = String(data: prettyData, encoding: .utf8) {
+                return TimelineEntry(date: date, name: name, payload: prettyString, original: line)
+            }
+            return TimelineEntry(date: date, name: nil, payload: line, original: line)
+        }.sorted { $0.date ?? .distantPast > $1.date ?? .distantPast }
+    }
+}
+
 struct PeerConnDetailSheet: View {
     let pair: NetworkStatus.PeerRoutePair
 
@@ -589,7 +629,7 @@ struct NodeInfoSheet: View {
                         }
                         if let v4s = ips.interfaceIPv4s, !v4s.isEmpty {
                             Section("Interface IPv4s") {
-                                ForEach(v4s, id: \.hashValue) { ip in
+                                ForEach(Array(Set(v4s)), id: \.hashValue) { ip in
                                     Text(ip.description)
                                         .textSelection(.enabled)
                                 }
@@ -597,7 +637,7 @@ struct NodeInfoSheet: View {
                         }
                         if let v6s = ips.interfaceIPv6s, !v6s.isEmpty {
                             Section("Interface IPv6s") {
-                                ForEach(v6s, id: \.hashValue) { ip in
+                                ForEach(Array(Set(v6s)), id: \.hashValue) { ip in
                                     Text(ip.description)
                                         .textSelection(.enabled)
                                 }
