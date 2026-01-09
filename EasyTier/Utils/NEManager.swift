@@ -82,7 +82,7 @@ class NEManager: NEManagerProtocol {
         manager.localizedDescription = "EasyTier"
         let tunnelProtocol = NETunnelProviderProtocol()
         tunnelProtocol.providerBundleIdentifier = "site.yinmo.easytier.tunnel"
-        tunnelProtocol.serverAddress = "0.0.0.0"
+        tunnelProtocol.serverAddress = "127.0.0.1"
         manager.protocolConfiguration = tunnelProtocol
         manager.isEnabled = true
         do {
@@ -146,7 +146,15 @@ class NEManager: NEManagerProtocol {
         }
         Self.logger.debug("connect() config: \(encoded)")
         options["config"] = encoded as NSString
-        options["mtu"] = (config.flags?.mtu ?? 1300) as NSNumber
+        if let ipv4 = config.ipv4 {
+            options["ipv4"] = ipv4 as NSString
+        }
+        if let ipv6 = config.ipv6 {
+            options["ipv6"] = ipv6 as NSString
+        }
+        if let mtu = config.flags?.mtu {
+            options["mtu"] = mtu as NSNumber
+        }
         if let logLevel = UserDefaults.standard.string(forKey: "logLevel") {
             options["logLevel"] = logLevel as NSString
         }

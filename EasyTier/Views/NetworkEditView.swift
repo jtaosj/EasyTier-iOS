@@ -77,7 +77,7 @@ struct NetworkEditView: View {
 
     var advancedSettings: some View {
         Form {
-            Section {
+            Section("General") {
                 LabeledContent("Hostname") {
                     TextField("Default", text: $profile.hostname.bound)
                         .multilineTextAlignment(.trailing)
@@ -97,10 +97,6 @@ struct NetworkEditView: View {
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
                 }
-            } header: {
-                Text("General")
-            } footer: {
-                Text("MTU Default: 1380 (encrypted) or 1360 (unencrypted). Range: 400-1380.")
             }
             
             proxyCIDRsSettings
