@@ -8,7 +8,7 @@ iOS native client application for EasyTier, a decentralized virtual private netw
 
 This is an iOS client for EasyTier VPN. It provides a user-friendly interface to connect to EasyTier networks on iOS devices, with support for Network Extension framework for system-level VPN integration.
 
-### Snapshots
+### Screenshots
 
 <p align="center">
 <img src="Assets/config-page.png" width="200" alt="Config Page">
