@@ -244,7 +244,7 @@ class MockNEManager: NEManagerProtocol {
 
         let myNodeInfo = NetworkStatus.NodeInfo(
             virtualIPv4: NetworkStatus.IPv4CIDR(address: NetworkStatus.IPv4Addr("10.144.144.10")!, networkLength: 24),
-            hostname: "my-macbook-pro",
+            hostname: "My iPhone",
             version: "0.10.1",
             ips: .init(
                 publicIPv4: NetworkStatus.IPv4Addr("8.8.8.8"),
