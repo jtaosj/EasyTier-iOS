@@ -9,7 +9,7 @@ struct ContentView<Manager: NEManagerProtocol>: View {
             DashboardView<Manager>()
                 .tabItem {
                     Image(systemName: "list.bullet.below.rectangle")
-                    Text("web.main.dashboard")
+                    Text("main.dashboard")
                 }
             LogView()
                 .tabItem {

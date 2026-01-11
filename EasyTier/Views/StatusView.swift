@@ -71,12 +71,12 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     
     var singleColumn: some View {
         Form {
-            Section("web.device.status") {
+            Section("device.status") {
                 localStatus
             }
 
             if let error = status?.errorMsg {
-                Section("web.common.error") {
+                Section("common.error") {
                     HStack {
                         Image(systemName: "exclamationmark.triangle.fill")
                         Text(error)
@@ -85,9 +85,9 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 }
             }
 
-            Section("web.common.info") {
+            Section("common.info") {
                 Picker(
-                    "web.common.info",
+                    "common.info",
                     selection: $selectedInfoKind
                 ) {
                     ForEach(InfoKind.allCases) {
@@ -109,12 +109,12 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     var doubleComlum: some View {
         HStack(spacing: 0) {
             Form {
-                Section("web.device.status") {
+                Section("device.status") {
                     localStatus
                 }
 
                 if let error = status?.errorMsg {
-                    Section("web.common.error") {
+                    Section("common.error") {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
                             Text(error)
@@ -140,10 +140,10 @@ struct StatusView<Manager: NEManagerProtocol>: View {
         Group {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(status?.myNodeInfo?.hostname ?? "N/A")
+                    Text(status?.myNodeInfo?.hostname ?? String(localized: "not_available"))
                         .font(.title2)
                         .fontWeight(.bold)
-                    Text("v\(status?.myNodeInfo?.version ?? "N/A")")
+                    Text(status?.myNodeInfo?.version ?? String(localized: "not_available"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -169,7 +169,7 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 } label: {
                     StatItem(
                         label: String(localized: "virtual_ipv4"),
-                        value: status?.myNodeInfo?.virtualIPv4?.description ?? "N/A",
+                        value: status?.myNodeInfo?.virtualIPv4?.description ?? String(localized: "not_available"),
                         icon: "network"
                     )
                 }
@@ -180,7 +180,7 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 } label: {
                     StatItem(
                         label: String(localized: "nat_type"),
-                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? "N/A",
+                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? String(localized: "not_available"),
                         icon: "shield"
                     )
                 }
@@ -317,7 +317,9 @@ struct PeerRowView: View {
                 }
 
                 if let lossRate {
-                    Text("Loss: \(String(format: "%.0f", lossRate * 100))%")
+                    let lossPercent = String(format: "%.0f", lossRate * 100)
+                    let lossText = String(format: NSLocalizedString("loss_rate_format", comment: ""), lossPercent)
+                    Text(lossText)
                         .font(.caption2)
                         .foregroundStyle(lossRateColor(lossRate))
                         .padding(.horizontal, 6)
@@ -496,7 +498,7 @@ struct TimelineLogPanel: View {
     
     var body: some View {
         if timelineEntries.isEmpty {
-            Text("No parsed events")
+            Text("no_parsed_events")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding()
@@ -528,7 +530,7 @@ struct TimelineRow: View {
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 } else {
-                    Text("N/A")
+                    Text("not_available")
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(.primary)
@@ -619,44 +621,44 @@ struct PeerConnDetailSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Peer") {
+                Section("peer") {
                     LabeledContent("hostname", value: pair.route.hostname)
-                    LabeledContent("Peer ID", value: String(pair.route.peerId))
+                    LabeledContent("peer_id", value: String(pair.route.peerId))
                 }
 
                 if conns.isEmpty {
-                    Section("Connections") {
-                        Text("No connection details available.")
+                    Section("connections") {
+                        Text("no_connection_details_available")
                             .foregroundStyle(.secondary)
                     }
                 } else {
                     ForEach(conns, id: \.connId) { conn in
-                        Section("Connection \(conn.connId)") {
-                            LabeledContent("Role", value: conn.isClient ? "Client" : "status.server")
+                        Section("connection_with_id") {
+                            LabeledContent("role", value: conn.isClient ? "Client" : "status.server")
                             LabeledContent("loss_rate", value: percentString(conn.lossRate))
-                            LabeledContent("network", value: conn.networkName ?? "N/A")
-                            LabeledContent("Closed", value: triState(conn.isClosed))
+                            LabeledContent("network", value: conn.networkName ?? String(localized: "not_available"))
+                            LabeledContent("closed", value: triState(conn.isClosed))
 
-                            LabeledContent("Features", value: conn.features.isEmpty ? "None" : conn.features.joined(separator: ", "))
+                            LabeledContent("features", value: conn.features.isEmpty ? "None" : conn.features.joined(separator: ", "))
 
                             if let tunnel = conn.tunnel {
-                                LabeledContent("Tunnel Type", value: tunnel.tunnelType.uppercased())
+                                LabeledContent("tunnel_type", value: tunnel.tunnelType.uppercased())
                                 LabeledContent("status.local", value: tunnel.localAddr.url)
                                 LabeledContent("mode.remote", value: tunnel.remoteAddr.url)
                             }
 
                             if let stats = conn.stats {
-                                LabeledContent("Rx Bytes", value: formatBytes(stats.rxBytes))
-                                LabeledContent("Tx Bytes", value: formatBytes(stats.txBytes))
-                                LabeledContent("Rx Packets", value: String(stats.rxPackets))
-                                LabeledContent("Tx Packets", value: String(stats.txPackets))
+                                LabeledContent("rx_bytes", value: formatBytes(stats.rxBytes))
+                                LabeledContent("tx_bytes", value: formatBytes(stats.txBytes))
+                                LabeledContent("rx_packets", value: String(stats.rxPackets))
+                                LabeledContent("tx_packets", value: String(stats.txPackets))
                                 LabeledContent("latency", value: latencyString(stats.latencyUs))
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("Peer Details")
+            .navigationTitle("peer_details")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -688,7 +690,7 @@ struct NodeInfoSheet: View {
         NavigationStack {
             Form {
                 if let nodeInfo {
-                    Section("Basic Info") {
+                    Section("basic_info") {
                         LabeledContent("hostname", value: nodeInfo.hostname)
                         LabeledContent("status.version", value: nodeInfo.version)
                         if let virtualIPv4 = nodeInfo.virtualIPv4 {
@@ -698,17 +700,17 @@ struct NodeInfoSheet: View {
                     
                     if let ips = nodeInfo.ips {
                         if ips.publicIPv4 != nil || ips.publicIPv6 != nil {
-                            Section("IP Information") {
+                            Section("ip_information") {
                                 if let publicIPv4 = ips.publicIPv4 {
-                                    LabeledContent("Public IPv4", value: publicIPv4.description)
+                                    LabeledContent("public_ipv4", value: publicIPv4.description)
                                 }
                                 if let publicIPv6 = ips.publicIPv6 {
-                                    LabeledContent("Public IPv6", value: publicIPv6.description)
+                                    LabeledContent("public_ipv6", value: publicIPv6.description)
                                 }
                             }
                         }
                         if let v4s = ips.interfaceIPv4s, !v4s.isEmpty {
-                            Section("Interface IPv4s") {
+                            Section("interface_ipv4s") {
                                 ForEach(Array(Set(v4s)), id: \.hashValue) { ip in
                                     Text(ip.description)
                                         .textSelection(.enabled)
@@ -716,7 +718,7 @@ struct NodeInfoSheet: View {
                             }
                         }
                         if let v6s = ips.interfaceIPv6s, !v6s.isEmpty {
-                            Section("Interface IPv6s") {
+                            Section("interface_ipv6s") {
                                 ForEach(Array(Set(v6s)), id: \.hashValue) { ip in
                                     Text(ip.description)
                                         .textSelection(.enabled)
@@ -726,7 +728,7 @@ struct NodeInfoSheet: View {
                     }
                     
                     if let listeners = nodeInfo.listeners, !listeners.isEmpty {
-                        Section("Listeners") {
+                        Section("listeners") {
                             ForEach(listeners, id: \.url) { listener in
                                 Text(listener.url)
                                     .textSelection(.enabled)
@@ -735,12 +737,12 @@ struct NodeInfoSheet: View {
                     }
                 } else {
                     Section {
-                        Text("No node information available")
+                        Text("no_node_information_available")
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("Node Information")
+            .navigationTitle("node_information")
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -753,23 +755,23 @@ struct StunInfoSheet: View {
         NavigationStack {
             Form {
                 if let stunInfo {
-                    Section("NAT Types") {
-                        LabeledContent("UDP NAT Type", value: stunInfo.udpNATType.description)
-                        LabeledContent("TCP NAT Type", value: stunInfo.tcpNATType.description)
+                    Section("nat_types") {
+                        LabeledContent("udp_nat_type", value: stunInfo.udpNATType.description)
+                        LabeledContent("tcp_nat_type", value: stunInfo.tcpNATType.description)
                     }
                     
-                    Section("Details") {
-                        LabeledContent("Last Update", value: formatDate(stunInfo.lastUpdateTime))
+                    Section("details") {
+                        LabeledContent("last_update", value: formatDate(stunInfo.lastUpdateTime))
                         if let minPort = stunInfo.minPort {
-                            LabeledContent("Min Port", value: String(minPort))
+                            LabeledContent("min_port", value: String(minPort))
                         }
                         if let maxPort = stunInfo.maxPort {
-                            LabeledContent("Max Port", value: String(maxPort))
+                            LabeledContent("max_port", value: String(maxPort))
                         }
                     }
                     
                     if !stunInfo.publicIPs.isEmpty {
-                        Section("Public IPs") {
+                        Section("public_ips") {
                             ForEach(stunInfo.publicIPs, id: \.self) { ip in
                                 Text(ip)
                                     .textSelection(.enabled)
@@ -778,12 +780,12 @@ struct StunInfoSheet: View {
                     }
                 } else {
                     Section {
-                        Text("No STUN information available")
+                        Text("no_stun_information_available")
                             .foregroundStyle(.secondary)
                     }
                 }
             }
-            .navigationTitle("STUN Information")
+            .navigationTitle("stun_information")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

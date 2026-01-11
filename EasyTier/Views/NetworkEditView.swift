@@ -92,7 +92,7 @@ struct NetworkEditView: View {
                     }
                 case .manual:
                     ListEditor(newItemTitle: "common_text.add_peer", items: $profile.peerURLs, addItemFactory: { "" }, rowContent: {
-                        TextField("e.g.: tcp://8.8.8.8:11010", text: $0.text)
+                        TextField("example.peer_url", text: $0.text)
                             .fontDesign(.monospaced)
                     })
                 case .standalone:
@@ -139,7 +139,7 @@ struct NetworkEditView: View {
                     }
                     LabeledContent("vpn_portal_listen_port") {
                         TextField(
-                            "e.g. 22022",
+                            "example.vpn_portal_listen_port",
                             value: $profile.vpnPortalListenPort,
                             formatter: NumberFormatter()
                         )
@@ -151,7 +151,7 @@ struct NetworkEditView: View {
             
             Section("listener_urls") {
                 ListEditor(newItemTitle: "common_text.add_listener_url", items: $profile.listenerURLs, addItemFactory: { "" }, rowContent: {
-                    TextField("e.g: tcp://1.1.1.1:11010", text: $0.text)
+                    TextField("example.listener_url", text: $0.text)
                         .fontDesign(.monospaced)
                 })
             }
@@ -160,7 +160,7 @@ struct NetworkEditView: View {
                 Toggle("common_text.enable", isOn: $profile.enableRelayNetworkWhitelist)
                 if profile.enableRelayNetworkWhitelist {
                     ListEditor(newItemTitle: "common_text.add_network", items: $profile.relayNetworkWhitelist, addItemFactory: { "" }, rowContent: {
-                        TextField("e.g.: net1", text: $0.text)
+                        TextField("example.network_name", text: $0.text)
                             .fontDesign(.monospaced)
                     })
                 }
@@ -189,9 +189,9 @@ struct NetworkEditView: View {
                     isOn: $profile.enableSocks5
                 )
                 if profile.enableSocks5 {
-                    LabeledContent("Listen Port") {
+                    LabeledContent("listen_port") {
                         TextField(
-                            "e.g. 1080",
+                            "example.socks5_port",
                             value: $profile.socks5Port,
                             formatter: NumberFormatter()
                         )
@@ -203,7 +203,7 @@ struct NetworkEditView: View {
             
             Section {
                 ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: {
-                    TextField("Node IP, e.g. 192.168.8.8", text: $0.text)
+                    TextField("node_ip_example", text: $0.text)
                         .fontDesign(.monospaced)
                 })
             } header: {
@@ -214,7 +214,7 @@ struct NetworkEditView: View {
             
             Section {
                 ListEditor(newItemTitle: "common_text.add_map_listener", items: $profile.mappedListeners, addItemFactory: { "" }, rowContent: {
-                    TextField("e.g.: tcp://123.123.123.123:11223", text: $0.text)
+                    TextField("example.mapped_listener_url", text: $0.text)
                         .fontDesign(.monospaced)
                 })
             } header: {
@@ -229,9 +229,9 @@ struct NetworkEditView: View {
                         get: { $profile.wrappedValue[keyPath: flag.keyPath] },
                         set: { $profile.wrappedValue[keyPath: flag.keyPath] = $0 }
                     )) {
-                        Text(LocalizedStringKey(flag.label))
+                        Text(flag.label)
                         if let help = flag.help {
-                            Text(LocalizedStringKey(help))
+                            Text(help)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -254,8 +254,8 @@ struct NetworkEditView: View {
                             .foregroundStyle(.secondary)
                         Spacer()
                         Picker("tunnel_proto", selection: $forward.proto) {
-                            Text("TCP").tag("tcp")
-                            Text("UDP").tag("udp")
+                            Text("tcp").tag("tcp")
+                            Text("udp").tag("udp")
                         }
                         .pickerStyle(.segmented)
                         .frame(width: 160)
@@ -264,7 +264,7 @@ struct NetworkEditView: View {
                         TextField("port_forwards_bind_addr", text: $forward.bindAddr)
                         Text(":")
                         TextField(
-                            "Port",
+                            "port",
                             value: $forward.bindPort,
                             formatter: NumberFormatter()
                         )
@@ -273,7 +273,7 @@ struct NetworkEditView: View {
                     }
                     HStack {
                         Image(systemName: "arrow.down")
-                        Text("Forward to")
+                        Text("forward_to")
                     }
                     .foregroundColor(.secondary)
                     .font(.caption)
@@ -281,7 +281,7 @@ struct NetworkEditView: View {
                         TextField("port_forwards_dst_addr", text: $forward.destAddr)
                         Text(":")
                         TextField(
-                            "Port",
+                            "port",
                             value: $forward.destPort,
                             formatter: NumberFormatter()
                         )
@@ -302,7 +302,7 @@ struct NetworkEditView: View {
             }, rowContent: { proxyCIDR in
                 HStack(spacing: 12) {
                     if proxyCIDR.enableMapping.wrappedValue {
-                        Text("Map:")
+                        Text("map")
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("\(proxyCIDR.cidr.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
@@ -312,7 +312,7 @@ struct NetworkEditView: View {
                         Text("\(proxyCIDR.mappedCIDR.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
                             .fontDesign(.monospaced)
                     } else {
-                        Text("Proxy:")
+                        Text("proxy")
                             .foregroundStyle(.secondary)
                         Spacer()
                         Text("\(proxyCIDR.cidr.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
@@ -334,14 +334,14 @@ struct NetworkEditView: View {
                 if let proxyCIDR = Binding($editingProxyCIDR) {
                     Form {
                         Section("common_text.proxy_cidr") {
-                            LabeledContent("CIDR") {
+                            LabeledContent("cidr") {
                                 IPv4Field(ip: proxyCIDR.cidr, length: proxyCIDR.length)
                             }
                         }
                         Section("common_text.mapped_cidr") {
                             Toggle("common_text.enable", isOn: proxyCIDR.enableMapping)
                             if proxyCIDR.enableMapping.wrappedValue {
-                                LabeledContent("CIDR") {
+                                LabeledContent("cidr") {
                                     IPv4Field(ip: proxyCIDR.mappedCIDR, length: proxyCIDR.length, disabledLengthEdit: true)
                                 }
                             }

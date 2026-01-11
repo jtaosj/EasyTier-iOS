@@ -13,8 +13,8 @@ struct SettingsView: View {
     let logLevels = ["trace", "debug", "info", "warn", "error"]
 
     var appVersion: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "N/A"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "N/A"
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? String(localized: "not_available")
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? String(localized: "not_available")
         return "\(version) (\(build))"
     }
 
@@ -35,7 +35,7 @@ struct SettingsView: View {
                         Text(level.uppercased()).tag(level)
                     }
                 }
-                LabeledContent("web.common.refresh") {
+                LabeledContent("common.refresh") {
                     HStack {
                         TextField(
                             "1.0",
@@ -52,7 +52,7 @@ struct SettingsView: View {
             }
 
             Section("about.title") {
-                LabeledContent("App") {
+                LabeledContent("app") {
                     Text("EasyTier")
                 }
                 LabeledContent("status.version") {

@@ -5,7 +5,7 @@ import os
 import TOMLKit
 import UniformTypeIdentifiers
 
-private let DashboardLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "web.main.dashboard")
+private let DashboardLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "main.dashboard")
 
 struct DashboardView<Manager: NEManagerProtocol>: View {
     @Environment(\.modelContext) var context
@@ -63,7 +63,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         .resizable()
                         .frame(width: 64, height: 64)
                         .foregroundStyle(Color.accentColor)
-                    Text("web.device_management.no_network_selected")
+                    Text("no_network_selected")
                     Spacer()
                 }
                 .frame(maxWidth: .infinity)
@@ -116,13 +116,13 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         }
                     }
                 }
-                Section("web.device.management") {
+                Section("device.management") {
                     Button {
                         showNewNetworkAlert = true
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "document.badge.plus")
-                            Text("web.device_management.create_network")
+                            Text("profile.create_network")
                         }
                     }
                     Button {
@@ -130,7 +130,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "long.text.page.and.pencil")
-                            Text("web.device_management.edit_as_file")
+                            Text("profile.edit_as_file")
                         }
                     }
                     Button {
@@ -138,7 +138,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "arrow.down.document")
-                            Text("web.device_management.import_config")
+                            Text("profile.import_config")
                         }
                     }
                     Button {
@@ -146,12 +146,12 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "square.and.arrow.up")
-                            Text("web.device_management.export_config")
+                            Text("profile.export_config")
                         }
                     }
                 }
             }
-            .navigationTitle("web.device.management")
+            .navigationTitle("device.management")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 Button {
@@ -166,10 +166,10 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     .textInputAutocapitalization(.never)
                 if #available(iOS 26.0, *) {
                     Button(role: .cancel) {}
-                    Button("web.network.create", role: .confirm, action: createProfile)
+                    Button("network.create", role: .confirm, action: createProfile)
                 } else {
-                    Button("web.common.cancel") {}
-                    Button("web.network.create", action: createProfile)
+                    Button("common.cancel") {}
+                    Button("network.create", action: createProfile)
                 }
             }
         }
@@ -277,7 +277,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button("web.common.cancel") {
+                        Button("common.cancel") {
                             showEditSheet = false
                         }
                     }
@@ -297,7 +297,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
         }
         .alert(item: $errorMessage) { msg in
             DashboardLogger.error("received error: \(String(describing: msg))")
-            return Alert(title: Text("web.common.error"), message: Text(msg.text))
+            return Alert(title: Text("common.error"), message: Text(msg.text))
         }
     }
 

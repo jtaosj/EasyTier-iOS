@@ -1,11 +1,12 @@
 import Foundation
+import SwiftUI
 import SwiftData
 
 struct BoolFlag: Identifiable {
     let id = UUID()
     let keyPath: WritableKeyPath<NetworkProfile, Bool>
-    let label: String
-    let help: String?
+    let label: LocalizedStringKey
+    let help: LocalizedStringKey?
 }
 
 @Model

@@ -98,10 +98,10 @@ struct LogView: View {
             }
         }
         .alert(item: $tailer.errorMessage) { msg in
-            Alert(title: Text("web.common.error"), message: Text(msg.text))
+            Alert(title: Text("common.error"), message: Text(msg.text))
         }
         .alert(item: $exportErrorMessage) { msg in
-            Alert(title: Text("web.common.error"), message: Text(msg.text))
+            Alert(title: Text("common.error"), message: Text(msg.text))
         }
         .sheet(isPresented: $isExportPresented) {
             if let url = exportURL {
