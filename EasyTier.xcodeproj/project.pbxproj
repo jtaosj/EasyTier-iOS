@@ -161,7 +161,6 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 0558363B2F04D26700139811 /* Build configuration list for PBXNativeTarget "EasyTierNetworkExtension" */;
 			buildPhases = (
-				058FD11E2F1376D800580896 /* Install Rust */,
 				05B61F3E2F04D57D00646DDC /* Build EasyTier Core */,
 				0558362A2F04D26600139811 /* Sources */,
 				0558362B2F04D26600139811 /* Frameworks */,
@@ -240,25 +239,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		058FD11E2F1376D800580896 /* Install Rust */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Install Rust";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"$HOME/.cargo/bin:$PATH\"\n\nif ! command -v rustc &> /dev/null\nthen\n    echo \"Rust not found. Installing Rust...\"\n    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y\nfi\n";
-		};
 		05B61F3E2F04D57D00646DDC /* Build EasyTier Core */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
