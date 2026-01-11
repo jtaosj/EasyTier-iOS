@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowContent: View {
-    var newItemTitle: String? = nil
+    var newItemTitle: LocalizedStringKey
     
     @Binding var items: [Element]
     
@@ -20,7 +20,7 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
             Button(action: addItem) {
                 HStack {
                     Image(systemName: "plus.circle.fill")
-                    Text(LocalizedStringKey(newItemTitle ?? "Add Item"))
+                    Text(newItemTitle)
                 }
             }
         }

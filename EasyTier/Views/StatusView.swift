@@ -14,12 +14,12 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     @State var showNodeInfo = false
     @State var showStunInfo = false
     
-    enum InfoKind: Identifiable, CaseIterable, CustomStringConvertible {
+    enum InfoKind: Identifiable, CaseIterable {
         var id: Self { self }
         case peerInfo
         case eventLog
         
-        var description: String {
+        var description: LocalizedStringKey {
             switch self {
             case .peerInfo: "peer_info"
             case .eventLog: "event_log"
@@ -168,8 +168,8 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                     showNodeInfo = true
                 } label: {
                     StatItem(
-                        label: String(localized: "virtual_ipv4"),
-                        value: status?.myNodeInfo?.virtualIPv4?.description ?? String(localized: "not_available"),
+                        label: "virtual_ipv4",
+                        value: LocalizedStringKey(stringLiteral: status?.myNodeInfo?.virtualIPv4?.description ?? "not_available"),
                         icon: "network"
                     )
                 }
@@ -179,8 +179,8 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                     showStunInfo = true
                 } label: {
                     StatItem(
-                        label: String(localized: "nat_type"),
-                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? String(localized: "not_available"),
+                        label: "nat_type",
+                        value: status?.myNodeInfo?.stunInfo?.udpNATType.description ?? LocalizedStringKey(stringLiteral: "not_available"),
                         icon: "shield"
                     )
                 }
@@ -318,8 +318,7 @@ struct PeerRowView: View {
 
                 if let lossRate {
                     let lossPercent = String(format: "%.0f", lossRate * 100)
-                    let lossText = String(format: NSLocalizedString("loss_rate_format", comment: ""), lossPercent)
-                    Text(lossText)
+                    Text("loss_rate_format_\(lossPercent)")
                         .font(.caption2)
                         .foregroundStyle(lossRateColor(lossRate))
                         .padding(.horizontal, 6)
@@ -424,8 +423,8 @@ struct TrafficItem: View {
 }
 
 struct StatItem: View {
-    let label: String
-    let value: String
+    let label: LocalizedStringKey
+    let value: LocalizedStringKey
     let icon: String
 
     var body: some View {
@@ -458,10 +457,10 @@ struct StatusBadge: View {
         }
     }
 
-    enum ActiveStatus: String {
-        case Stopped = "mode.service_status_stopped"
-        case Running = "network_running"
-        case Loading = "Loading"
+    enum ActiveStatus: LocalizedStringKey {
+        case Stopped = "stopped"
+        case Running = "running"
+        case Loading = "loading"
 
         init(_ active: Bool?) {
             if let active {
@@ -633,8 +632,8 @@ struct PeerConnDetailSheet: View {
                     }
                 } else {
                     ForEach(conns, id: \.connId) { conn in
-                        Section("connection_with_id") {
-                            LabeledContent("role", value: conn.isClient ? "Client" : "status.server")
+                        Section("connection_\(conn.connId)") {
+                            LabeledContent("role", value: conn.isClient ? "Client" : "Server")
                             LabeledContent("loss_rate", value: percentString(conn.lossRate))
                             LabeledContent("network", value: conn.networkName ?? String(localized: "not_available"))
                             LabeledContent("closed", value: triState(conn.isClosed))
@@ -643,8 +642,8 @@ struct PeerConnDetailSheet: View {
 
                             if let tunnel = conn.tunnel {
                                 LabeledContent("tunnel_type", value: tunnel.tunnelType.uppercased())
-                                LabeledContent("status.local", value: tunnel.localAddr.url)
-                                LabeledContent("mode.remote", value: tunnel.remoteAddr.url)
+                                LabeledContent("local_addr", value: tunnel.localAddr.url)
+                                LabeledContent("remote_addr", value: tunnel.remoteAddr.url)
                             }
 
                             if let stats = conn.stats {
@@ -756,8 +755,12 @@ struct StunInfoSheet: View {
             Form {
                 if let stunInfo {
                     Section("nat_types") {
-                        LabeledContent("udp_nat_type", value: stunInfo.udpNATType.description)
-                        LabeledContent("tcp_nat_type", value: stunInfo.tcpNATType.description)
+                        LabeledContent("udp_nat_type") {
+                            Text(stunInfo.udpNATType.description)
+                        }
+                        LabeledContent("tcp_nat_type") {
+                            Text(stunInfo.tcpNATType.description)
+                        }
                     }
                     
                     Section("details") {

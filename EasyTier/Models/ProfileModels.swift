@@ -33,13 +33,13 @@ final class ProfileSummary {
 
 @Model
 final class NetworkProfile {
-    enum NetworkingMethod: Int, Codable, CaseIterable, Identifiable, CustomStringConvertible {
+    enum NetworkingMethod: Int, Codable, CaseIterable, Identifiable {
         var id: Self { self }
         case publicServer = 0
         case manual = 1
         case standalone = 2
         
-        var description: String {
+        var description: LocalizedStringKey {
             switch self {
             case .publicServer: return "public_server"
             case .manual: return "manual"

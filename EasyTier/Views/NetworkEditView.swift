@@ -79,7 +79,7 @@ struct NetworkEditView: View {
                 ) {
                     ForEach(NetworkProfile.NetworkingMethod.allCases) {
                         method in
-                        Text(LocalizedStringKey(method.description)).tag(method)
+                        Text(method.description).tag(method)
                     }
                 }
                 .pickerStyle(.palette)
@@ -173,8 +173,13 @@ struct NetworkEditView: View {
             Section {
                 Toggle("common_text.enable", isOn: $profile.enableManualRoutes)
                 if profile.enableManualRoutes {
-                    ListEditor(newItemTitle: "common_text.add_route", items: $profile.routes, addItemFactory: NetworkProfile.CIDR.init, rowContent: {
-                        IPv4Field(ip: $0.ip, length: $0.length)
+                    ListEditor(newItemTitle: "common_text.add_route", items: $profile.routes, addItemFactory: NetworkProfile.CIDR.init, rowContent: { cidr in
+                        HStack {
+                            Text("cidr")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: cidr.ip, length: cidr.length)
+                        }
                     })
                 }
             } header: {
@@ -239,6 +244,7 @@ struct NetworkEditView: View {
                 }
             }
         }
+        .navigationTitle("advanced_settings")
         .scrollDismissesKeyboard(.immediately)
         .sheet(isPresented: $showProxyCIDREditor) {
             proxyCIDREditor
@@ -292,6 +298,7 @@ struct NetworkEditView: View {
                 .padding(.vertical, 5)
             })
         }
+        .navigationTitle("port_forwards")
         .scrollDismissesKeyboard(.immediately)
     }
     

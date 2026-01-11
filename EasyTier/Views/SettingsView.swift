@@ -35,7 +35,7 @@ struct SettingsView: View {
                         Text(level.uppercased()).tag(level)
                     }
                 }
-                LabeledContent("common.refresh") {
+                LabeledContent("status_refresh_rate") {
                     HStack {
                         TextField(
                             "1.0",
@@ -48,7 +48,7 @@ struct SettingsView: View {
                         Text("s")
                     }
                 }
-                Toggle("common_text.use_device_name", isOn: $useRealDeviceNameAsDefault)
+                Toggle("use_device_name", isOn: $useRealDeviceNameAsDefault)
             }
 
             Section("about.title") {

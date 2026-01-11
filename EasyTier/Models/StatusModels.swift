@@ -1,7 +1,8 @@
 import Foundation
+import SwiftUI
 
 struct NetworkStatus: Codable {
-    enum NATType: Int, Codable, CustomStringConvertible {
+    enum NATType: Int, Codable {
         case unknown = 0
         case openInternet = 1
         case noPAT = 2
@@ -13,18 +14,18 @@ struct NetworkStatus: Codable {
         case symmetricEasyInc = 8
         case symmetricEasyDec = 9
 
-        var description: String {
+        var description: LocalizedStringKey {
             switch self {
-            case .unknown: "Unknown"
-            case .openInternet: "Open Internet"
-            case .noPAT: "No PAT"
-            case .fullCone: "Full Cone"
-            case .restricted: "Restricted"
-            case .portRestricted: "PortRestricted"
-            case .symmetric: "Symmetric"
-            case .symUDPFirewall: "Symmetric UDP Firewall"
-            case .symmetricEasyInc: "Symmetric Port Increase"
-            case .symmetricEasyDec: "Symmetric Port Decrease"
+            case .unknown:          return "unknown"
+            case .openInternet:     return "open_internet"
+            case .noPAT:            return "no_pat"
+            case .fullCone:         return "full_cone"
+            case .restricted:       return "restricted"
+            case .portRestricted:   return "port_restricted"
+            case .symmetric:        return "symmetric"
+            case .symUDPFirewall:   return "symmetric_udp_firewall"
+            case .symmetricEasyInc: return "symmetric_easy_inc"
+            case .symmetricEasyDec: return "symmetric_easy_dec"
             }
         }
     }
