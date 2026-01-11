@@ -329,7 +329,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             return
         }
         self.lastOptions = options
-        initRustLogger(level: options["logLevel"] as? String)
+        initRustLogger(level: options["logLevel"] as? String ?? "info")
         var errPtr: UnsafePointer<CChar>? = nil
         let ret = config.withCString { strPtr in
             return run_network_instance(strPtr, &errPtr)
