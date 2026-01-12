@@ -50,10 +50,10 @@ struct NetworkEditView: View {
     var basicSettings: some View {
         Group {
             Section("virtual_ipv4") {
-                Toggle("virtual_ipv4_dhcp", isOn: $profile.dhcp)
+                Toggle("dhcp", isOn: $profile.dhcp)
 
                 if !profile.dhcp {
-                    LabeledContent("virtual_ipv4") {
+                    LabeledContent("cidr") {
                         IPv4Field(ip: $profile.virtualIPv4.ip, length: $profile.virtualIPv4.length)
                     }
                 }

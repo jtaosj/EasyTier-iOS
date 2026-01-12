@@ -583,6 +583,22 @@
         }
       }
     },
+    "dhcp" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DHCP"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DHCP"
+          }
+        }
+      }
+    },
     "disable_encryption" : {
       "localizations" : {
         "en" : {
@@ -2978,22 +2994,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "虚拟 IPv4 地址"
-          }
-        }
-      }
-    },
-    "virtual_ipv4_dhcp" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DHCP"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "DHCP"
           }
         }
       }
