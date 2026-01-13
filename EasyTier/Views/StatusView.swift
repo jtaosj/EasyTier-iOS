@@ -672,6 +672,7 @@ struct PeerConnDetailSheet: View {
                     }
                 }
             }
+            .textSelection(.enabled)
             .navigationTitle("peer_details")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -727,7 +728,6 @@ struct NodeInfoSheet: View {
                             Section("interface_ipv4s") {
                                 ForEach(Array(Set(v4s)), id: \.hashValue) { ip in
                                     Text(ip.description)
-                                        .textSelection(.enabled)
                                 }
                             }
                         }
@@ -735,7 +735,6 @@ struct NodeInfoSheet: View {
                             Section("interface_ipv6s") {
                                 ForEach(Array(Set(v6s)), id: \.hashValue) { ip in
                                     Text(ip.description)
-                                        .textSelection(.enabled)
                                 }
                             }
                         }
@@ -745,17 +744,16 @@ struct NodeInfoSheet: View {
                         Section("listeners") {
                             ForEach(listeners, id: \.url) { listener in
                                 Text(listener.url)
-                                    .textSelection(.enabled)
                             }
                         }
                     }
                 } else {
                     Section {
                         Text("no_node_information_available")
-                            .foregroundStyle(.secondary)
                     }
                 }
             }
+            .textSelection(.enabled)
             .navigationTitle("node_information")
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -792,7 +790,6 @@ struct StunInfoSheet: View {
                         Section("public_ips") {
                             ForEach(stunInfo.publicIPs, id: \.self) { ip in
                                 Text(ip)
-                                    .textSelection(.enabled)
                             }
                         }
                     }
@@ -805,6 +802,7 @@ struct StunInfoSheet: View {
             }
             .navigationTitle("stun_information")
             .navigationBarTitleDisplayMode(.inline)
+            .textSelection(.enabled)
         }
     }
     

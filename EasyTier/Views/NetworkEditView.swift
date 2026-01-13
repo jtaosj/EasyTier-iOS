@@ -53,7 +53,7 @@ struct NetworkEditView: View {
                 Toggle("dhcp", isOn: $profile.dhcp)
 
                 if !profile.dhcp {
-                    LabeledContent("cidr") {
+                    LabeledContent("address") {
                         IPv4Field(ip: $profile.virtualIPv4.ip, length: $profile.virtualIPv4.length)
                     }
                 }
@@ -124,6 +124,27 @@ struct NetworkEditView: View {
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
                 }
+            }
+            
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableOverrideDNS
+                )
+                if profile.enableOverrideDNS {
+                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
+                        HStack {
+                            Text("address")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: dns.text)
+                        }
+                    })
+                }
+            } header: {
+                Text("override_dns")
+            } footer: {
+                Text("override_dns_help")
             }
             
             proxyCIDRsSettings
@@ -207,9 +228,13 @@ struct NetworkEditView: View {
             }
             
             Section {
-                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: {
-                    TextField("node_ip_example", text: $0.text)
-                        .fontDesign(.monospaced)
+                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: { ip in
+                    HStack {
+                        Text("address")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        IPv4Field(ip: ip.text)
+                    }
                 })
             } header: {
                 Text("exit_nodes")

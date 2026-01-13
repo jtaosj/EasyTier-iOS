@@ -4,8 +4,7 @@ import Foundation
 
 let appName = "site.yinmo.easytier.tunnel"
 let appGroupID = "group.site.yinmo.easytier"
-let magicDNSIP = "100.100.100.101"
-let magicDNSCIDR = RunningIPv4CIDR(from: "100.100.100.101/32")!
+
 enum ProviderCommand: String {
     case exportOSLog = "export_oslog"
     case runningInfo = "running_info"
@@ -85,10 +84,11 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         if !routes.isEmpty {
             logger.info("prepareSettings() ipv4 routes: \(routes.count)")
             ipv4Settings.includedRoutes = routes
+            settings.ipv4Settings = ipv4Settings
         } else {
-            logger.warning("prepareSettings() no ipv4 routes")
+            logger.warning("prepareSettings() no ipv4 routes, skipping all")
+            return NEPacketTunnelNetworkSettings(tunnelRemoteAddress: "127.0.0.1")
         }
-        settings.ipv4Settings = ipv4Settings
 
         if let ipv6CIDR = (options["ipv6"] as? String)?.split(separator: "/"), ipv6CIDR.count == 2 {
             let ip = ipv6CIDR[0], cidrStr = ipv6CIDR[1]
@@ -100,8 +100,8 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
         }
 
-        if let dns = buildDNSServers(from: runningInfo, options: options) {
-            settings.dnsSettings = NEDNSSettings(servers: dns)
+        if let dns = buildDNSServers(options: options) {
+            settings.dnsSettings = dns
         }
         
         settings.mtu = options["mtu"] as? NSNumber

@@ -184,12 +184,21 @@ class NEManager: NEManagerProtocol {
         if let mtu = config.flags?.mtu {
             options["mtu"] = mtu as NSNumber
         }
-        if let logLevel = UserDefaults.standard.string(forKey: "logLevel") {
-            options["logLevel"] = logLevel as NSString
-        }
         if let routes = config.routes {
             options["routes"] = NSArray(array: routes.map { $0 as NSString })
         }
+        if let logLevel = UserDefaults.standard.string(forKey: "logLevel") {
+            options["logLevel"] = logLevel as NSString
+        }
+        if profile.profile.enableMagicDNS {
+            options["magicDNS"] = true as NSNumber
+        }
+        
+        let dnsArray: [NSString] = profile.profile.overrideDNS.map { $0.text as NSString }
+        if !dnsArray.isEmpty {
+            options["dns"] = dnsArray as NSArray
+        }
+        
         do {
             try manager.connection.startVPNTunnel(options: options)
         } catch {

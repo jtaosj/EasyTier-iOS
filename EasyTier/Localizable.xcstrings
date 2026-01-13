@@ -100,6 +100,22 @@
         }
       }
     },
+    "address" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Address"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "地址"
+          }
+        }
+      }
+    },
     "advanced_settings" : {
       "localizations" : {
         "en" : {
@@ -192,6 +208,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已关闭"
+          }
+        }
+      }
+    },
+    "common_text.add_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加 DNS"
           }
         }
       }
@@ -917,13 +949,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enable magic dns, all nodes in the network can access each other by domain name, e.g.: node1.et.net.\n"
+            "value" : "Enable magic dns, all nodes in the network can access each other by domain name, e.g.: node1.et.net."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "启用魔法 DNS，允许通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。\n"
+            "value" : "启用魔法 DNS，允许通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。"
           }
         }
       }
@@ -1971,22 +2003,6 @@
         }
       }
     },
-    "node_ip_example" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Node IP, e.g. 192.168.8.8"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "节点 IP，如：192.168.8.8"
-          }
-        }
-      }
-    },
     "not_available" : {
       "localizations" : {
         "en" : {
@@ -2015,6 +2031,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "开放网络"
+          }
+        }
+      }
+    },
+    "override_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Override DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖 DNS"
+          }
+        }
+      }
+    },
+    "override_dns_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Override system DNS. You should add magic DNS manually if you enable both settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖系统 DNS。如果也同时启用了魔法 DNS，需要手动添加。"
           }
         }
       }

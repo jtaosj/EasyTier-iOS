@@ -2,6 +2,8 @@ import Foundation
 import NetworkExtension
 import os
 
+let magicDNSCIDR = RunningIPv4CIDR(from: "100.100.100.101/32")!
+
 func tunnelFileDescriptor() -> Int32? {
     logger.warning("tunnelFileDescriptor() use fallback")
     var ctlInfo = ctl_info()
@@ -116,7 +118,7 @@ func buildIPv4Routes(info: RunningInfo?, options: [String : NSObject]) -> [NEIPv
     if let ipv4 = info.myNodeInfo?.virtualIPv4 {
         cidrs.insert(.init(address: ipv4MaskedSubnet(ipv4), length: ipv4.networkLength))
     }
-    if let dns = buildDNSServers(from: info, options: nil), dns.contains(magicDNSIP) {
+    if let enable = options["magicDNS"] as? Bool, enable {
         cidrs.insert(magicDNSCIDR)
     }
     if cidrs.isEmpty {
@@ -131,19 +133,26 @@ func buildIPv4Routes(info: RunningInfo?, options: [String : NSObject]) -> [NEIPv
     }
 }
 
-func buildDNSServers(from info: RunningInfo?, options: [String: NSObject]?) -> [String]? {
-    if let dns = options?["dns"] as? String, !dns.isEmpty {
+func buildDNSServers(options: [String: NSObject]) -> NEDNSSettings? {
+    let enabledMagicDNS = options["magicDNS"] as? Bool ?? false
+    var settings: NEDNSSettings
+    if let dns = options["dns"] as? NSArray, dns.count > 0 {
         logger.info("buildDNSServers() use options dns: \(dns)")
-        return [dns]
+        settings = .init(servers: dns.compactMap { $0 as? String })
+        settings.matchDomains = [""]
+        settings.searchDomains = ["et.net"]
+    } else if enabledMagicDNS {
+        settings = .init(servers: [magicDNSCIDR.address.description])
+        settings.matchDomains = ["et.net"]
+    } else {
+        return nil
     }
-    guard let info else { return nil }
-    let hasMagicDNSRoute = info.routes.contains { route in
-        route.proxyCIDRs.contains { normalizeCIDR($0) == magicDNSCIDR }
+    
+    if enabledMagicDNS {
+        logger.info("buildDNSServers() enabled magic dns")
+        settings.searchDomains = ["et.net"]
     }
-    if hasMagicDNSRoute {
-        logger.info("buildDNSServers() enable magic dns")
-    }
-    return hasMagicDNSRoute ? [magicDNSIP] : nil
+    return settings
 }
 
 func normalizeCIDR(_ cidr: String) -> RunningIPv4CIDR? {

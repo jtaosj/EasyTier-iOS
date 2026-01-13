@@ -301,6 +301,7 @@ struct NetworkConfig: Codable {
         tempFlags.enableKCPProxy = takeIfChanged(profile.enableKCPProxy, def.enableKCPProxy)
         tempFlags.disableKCPInput = takeIfChanged(profile.disableKCPInput, def.disableKCPInput)
         tempFlags.proxyForwardBySystem = takeIfChanged(profile.proxyForwardBySystem, def.proxyForwardBySystem)
+        tempFlags.acceptDNS = takeIfChanged(profile.enableMagicDNS, def.enableMagicDNS)
         tempFlags.enableQUICProxy = takeIfChanged(profile.enableQUICProxy, def.enableQUICProxy)
         tempFlags.disableQUICInput = takeIfChanged(profile.disableQUICInput, def.disableQUICInput)
         tempFlags.disableSymHolePunching = takeIfChanged(profile.disableSymHolePunching, def.disableSymHolePunching)

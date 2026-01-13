@@ -147,6 +147,9 @@ final class NetworkProfile {
     var enableMagicDNS: Bool = false
     var enablePrivateMode: Bool = false
 
+    var enableOverrideDNS: Bool = false
+    var overrideDNS: [TextItem] = []
+
     init(id: UUID) {
         self.id = id
     }
