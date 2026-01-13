@@ -104,7 +104,7 @@ struct NetworkEditView: View {
 
     var advancedSettings: some View {
         Form {
-            Section("basic_settings") {
+            Section("general") {
                 LabeledContent("hostname") {
                     TextField("common_text.default", text: $profile.hostname.bound)
                         .multilineTextAlignment(.trailing)

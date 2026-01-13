@@ -6,8 +6,18 @@ let appName = "site.yinmo.easytier.tunnel"
 let appGroupID = "group.site.yinmo.easytier"
 let magicDNSIP = "100.100.100.101"
 let magicDNSCIDR = RunningIPv4CIDR(from: "100.100.100.101/32")!
+enum ProviderCommand: String {
+    case exportOSLog = "export_oslog"
+    case runningInfo = "running_info"
+}
 
 let logger = Logger(subsystem: appName, category: "swift")
+
+private struct ProviderMessageResponse: Codable {
+    let ok: Bool
+    let path: String?
+    let error: String?
+}
 
 class PacketTunnelProvider: NEPacketTunnelProvider {
     // Hold a weak reference to the current provider for C callback bridging
@@ -237,13 +247,33 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         logger.debug("handleAppMessage(): triggered")
         // Add code here to handle the message.
         guard let completionHandler else { return }
-        var infoPtr: UnsafePointer<CChar>? = nil
-        var errPtr: UnsafePointer<CChar>? = nil
-        if get_running_info(&infoPtr, &errPtr) == 0, let info = extractRustString(infoPtr) {
-            completionHandler(info.data(using: .utf8))
+        if let raw = String(data: messageData, encoding: .utf8),
+           let command = ProviderCommand(rawValue: raw) {
+            switch command {
+            case .exportOSLog:
+                do {
+                    let url = try OSLogExporter.exportToAppGroup(appGroupID: appGroupID)
+                    let response = ProviderMessageResponse(ok: true, path: url.path, error: nil)
+                    let data = try JSONEncoder().encode(response)
+                    completionHandler(data)
+                } catch {
+                    let response = ProviderMessageResponse(ok: false, path: nil, error: error.localizedDescription)
+                    let data = try? JSONEncoder().encode(response)
+                    completionHandler(data)
+                }
+            case .runningInfo:
+                var infoPtr: UnsafePointer<CChar>? = nil
+                var errPtr: UnsafePointer<CChar>? = nil
+                if get_running_info(&infoPtr, &errPtr) == 0, let info = extractRustString(infoPtr) {
+                    completionHandler(info.data(using: .utf8))
+                } else if let err = extractRustString(errPtr) {
+                    logger.error("handleAppMessage() failed: \(err, privacy: .public)")
+                    completionHandler(nil)
+                } else {
+                    completionHandler(nil)
+                }
+            }
             return
-        } else if let err = extractRustString(errPtr) {
-            logger.error("handleAppMessage() failed: \(err, privacy: .public)")
         }
         completionHandler(nil)
     }

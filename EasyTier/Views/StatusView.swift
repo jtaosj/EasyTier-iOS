@@ -704,7 +704,7 @@ struct NodeInfoSheet: View {
         NavigationStack {
             Form {
                 if let nodeInfo {
-                    Section("basic_info") {
+                    Section("general") {
                         LabeledContent("hostname", value: nodeInfo.hostname)
                         LabeledContent("status.version", value: nodeInfo.version)
                         if let virtualIPv4 = nodeInfo.virtualIPv4 {

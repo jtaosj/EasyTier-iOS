@@ -47,7 +47,7 @@ func initRustLogger(level: String?) {
     }
     containerURL.append(component: filename)
     let path = containerURL.path(percentEncoded: false)
-    logger.warning("initRustLogger() write to: \(path)")
+    logger.info("initRustLogger() write to: \(path, privacy: .public)")
     
     var errPtr: UnsafePointer<CChar>? = nil
     let ret = path.withCString { pathPtr in

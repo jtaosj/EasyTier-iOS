@@ -1,5 +1,4 @@
 import SwiftUI
-import UIKit
 
 let APP_GROUP_ID: String = "group.site.yinmo.easytier"
 let LOG_FILENAME: String = "easytier.log"
@@ -122,20 +121,6 @@ struct LogView: View {
         exportURL = url
         isExportPresented = true
     }
-}
-
-struct ShareSheet: UIViewControllerRepresentable {
-    let activityItems: [Any]
-    var applicationActivities: [UIActivity]? = nil
-
-    func makeUIViewController(context: Context) -> UIActivityViewController {
-        UIActivityViewController(
-            activityItems: activityItems,
-            applicationActivities: applicationActivities
-        )
-    }
-
-    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 struct LogView_Previews: PreviewProvider {

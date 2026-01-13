@@ -1,10 +1,16 @@
 import SwiftUI
+import NetworkExtension
 
-struct SettingsView: View {
+struct SettingsView<Manager: NEManagerProtocol>: View {
+    @EnvironmentObject var manager: Manager
     @AppStorage("logLevel") var logLevel: String = "info"
     @AppStorage("statusRefreshInterval") var statusRefreshInterval: Double = 1.0
     @AppStorage("useRealDeviceNameAsDefault") var useRealDeviceNameAsDefault: Bool = true
     @State var selectedPane: SettingsPane?
+    @State private var exportURL: URL?
+    @State private var isExportPresented = false
+    @State private var exportErrorMessage: TextItem?
+    @State private var isExporting = false
 
     enum SettingsPane: Hashable {
         case license
@@ -29,12 +35,7 @@ struct SettingsView: View {
     
     var primaryColumn: some View {
         List(selection: $selectedPane) {
-            Section("basic_settings") {
-                Picker("mode.log_level", selection: $logLevel) {
-                    ForEach(logLevels, id: \.self) { level in
-                        Text(level.uppercased()).tag(level)
-                    }
-                }
+            Section("general") {
                 LabeledContent("status_refresh_rate") {
                     HStack {
                         TextField(
@@ -51,6 +52,30 @@ struct SettingsView: View {
                 Toggle("use_device_name", isOn: $useRealDeviceNameAsDefault)
             }
 
+            Section {
+                Picker("log_level", selection: $logLevel) {
+                    ForEach(logLevels, id: \.self) { level in
+                        Text(level.uppercased()).tag(level)
+                    }
+                }
+                Button(action: {
+                    exportOSLog()
+                }) {
+                    HStack {
+                        Text("export_oslog")
+                        Spacer()
+                        if isExporting {
+                            ProgressView()
+                        }
+                    }
+                }
+                .disabled(isExporting || manager.status != .connected)
+            } header: {
+                Text("logging")
+            } footer: {
+                Text("logging_help")
+            }
+
             Section("about.title") {
                 LabeledContent("app") {
                     Text("EasyTier")
@@ -61,6 +86,14 @@ struct SettingsView: View {
                 Link("about.homepage", destination: URL(string: "https://github.com/EasyTier/EasyTier-iOS")!)
                 
                 NavigationLink("about.license", value: SettingsPane.license)
+            }
+        }
+        .alert(item: $exportErrorMessage) { msg in
+            Alert(title: Text("common.error"), message: Text(msg.text))
+        }
+        .sheet(isPresented: $isExportPresented) {
+            if let url = exportURL {
+                ShareSheet(activityItems: [url])
             }
         }
     }
@@ -171,12 +204,36 @@ struct SettingsView: View {
         }
         .navigationTitle("about.license")
     }
+
+    private func exportOSLog() {
+        guard !isExporting else { return }
+        isExporting = true
+        Task {
+            do {
+                let url = try await manager.exportExtensionLogs()
+                await MainActor.run {
+                    exportURL = url
+                    isExportPresented = true
+                }
+            } catch {
+                await MainActor.run {
+                    exportErrorMessage = .init(String(localized: "export_failed"))
+                }
+            }
+            await MainActor.run {
+                isExporting = false
+            }
+        }
+    }
 }
 
 struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
-        SettingsView()
-        SettingsView()
+        @StateObject var manager = MockNEManager()
+        SettingsView<MockNEManager>()
+            .environmentObject(manager)
+        SettingsView<MockNEManager>()
             .previewInterfaceOrientation(.landscapeLeft)
+            .environmentObject(manager)
     }
 }

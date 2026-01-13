@@ -132,38 +132,6 @@
         }
       }
     },
-    "basic_info" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basic Info"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基本信息"
-          }
-        }
-      }
-    },
-    "basic_settings" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Basic Settings"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "基础设置"
-          }
-        }
-      }
-    },
     "bind_device" : {
       "localizations" : {
         "en" : {
@@ -1168,6 +1136,38 @@
         }
       }
     },
+    "export_failed" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export failed. Please try again."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出失败，请重试。"
+          }
+        }
+      }
+    },
+    "export_oslog" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Export Network Extension Logs"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导出 Network Extension 日志"
+          }
+        }
+      }
+    },
     "features" : {
       "localizations" : {
         "en" : {
@@ -1228,6 +1228,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完全锥形"
+          }
+        }
+      }
+    },
+    "general" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "General"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通用"
           }
         }
       }
@@ -1427,6 +1443,22 @@
         }
       }
     },
+    "log_level" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log Level"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日志等级"
+          }
+        }
+      }
+    },
     "logging" : {
       "localizations" : {
         "en" : {
@@ -1439,6 +1471,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "日志"
+          }
+        }
+      }
+    },
+    "logging_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The modification of the log level will only take effect after restarting the core.\nThe logs exported here are from the running Network Extension and should be distinguished from the core logs exported in the Logs tab."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日志等级的修改需要在重启核心后才能生效。\n此处导出的日志为 Network Extension 的完整日志，仅能在运行时导出，应与“日志”标签页中导出的核心日志加以区分。"
           }
         }
       }
@@ -1615,22 +1663,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "最小端口"
-          }
-        }
-      }
-    },
-    "mode.log_level" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Log Level"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "日志级别"
           }
         }
       }
@@ -2179,18 +2211,18 @@
         }
       }
     },
-    "profile.edit_as_file" : {
+    "profile.edit_as_text" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Edit as File"
+            "value" : "Edit as Text"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "编辑为文件"
+            "value" : "编辑为文本"
           }
         }
       }

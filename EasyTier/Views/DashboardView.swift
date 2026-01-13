@@ -5,7 +5,7 @@ import os
 import TOMLKit
 import UniformTypeIdentifiers
 
-private let DashboardLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "main.dashboard")
+private let dashboardLogger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "main.dashboard")
 
 struct DashboardView<Manager: NEManagerProtocol>: View {
     @Environment(\.modelContext) var context
@@ -22,11 +22,10 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
     @State var showNewNetworkAlert = false
     @State var newNetworkInput = ""
 
-    @State private var showImportPicker = false
-    @State private var showExportSheet = false
-    @State private var exportURL: URL?
-    @State private var showEditSheet = false
-    @State private var editText = ""
+    @State var showImportPicker = false
+    @State var exportURL: IdentifiableURL?
+    @State var showEditSheet = false
+    @State var editText = ""
 
     @State var errorMessage: TextItem?
 
@@ -130,7 +129,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "long.text.page.and.pencil")
-                            Text("profile.edit_as_file")
+                            Text("profile.edit_as_text")
                         }
                     }
                     Button {
@@ -197,7 +196,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                                 do {
                                     try await manager.connect(profile: selectedProfile)
                                 } catch {
-                                    DashboardLogger.error("connect failed: \(error)")
+                                    dashboardLogger.error("connect failed: \(error)")
                                     errorMessage = .init(error.localizedDescription)
                                 }
                             }
@@ -233,7 +232,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                 let defaults = UserDefaults(suiteName: "group.site.yinmo.easytier")
                 if let msg = defaults?.string(forKey: "TunnelLastError") {
                     DispatchQueue.main.async {
-                        DashboardLogger.error("core stopped: \(msg)")
+                        dashboardLogger.error("core stopped: \(msg)")
                         self.errorMessage = .init(msg)
                     }
                 }
@@ -250,53 +249,51 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             // Release observer to remove registration
             darwinObserver = nil
         }
-        .fileImporter(
-            isPresented: $showImportPicker,
-            allowedContentTypes: [UTType(filenameExtension: "toml") ?? .plainText],
-            allowsMultipleSelection: false
-        ) { result in
-            switch result {
-            case .success(let urls):
-                guard let url = urls.first else { return }
-                importConfig(from: url)
-            case .failure(let error):
-                errorMessage = .init(error.localizedDescription)
-            }
-        }
         .sheet(isPresented: $showManageSheet) {
             sheetView
-        }
-        .sheet(isPresented: $showEditSheet) {
-            NavigationStack {
-                VStack(spacing: 0) {
-                    TextEditor(text: $editText)
-                        .font(.system(.body, design: .monospaced))
-                        .padding(8)
-                }
-                .navigationTitle("edit_config")
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button("common.cancel") {
-                            showEditSheet = false
+                .sheet(isPresented: $showEditSheet) {
+                    NavigationStack {
+                        VStack(spacing: 0) {
+                            TextEditor(text: $editText)
+                                .font(.system(.body, design: .monospaced))
+                                .padding(8)
+                        }
+                        .navigationTitle("edit_config")
+                        .navigationBarTitleDisplayMode(.inline)
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button("common.cancel") {
+                                    showEditSheet = false
+                                }
+                            }
+                            ToolbarItem(placement: .topBarTrailing) {
+                                Button("save") {
+                                    saveEditInText()
+                                }
+                                .buttonStyle(.borderedProminent)
+                            }
                         }
                     }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("save") {
-                            saveEditInText()
-                        }
-                        .buttonStyle(.borderedProminent)
+                }
+                .sheet(item: $exportURL) { url in
+                    ShareSheet(activityItems: [url.url])
+                }
+                .fileImporter(
+                    isPresented: $showImportPicker,
+                    allowedContentTypes: [UTType(filenameExtension: "toml") ?? .plainText],
+                    allowsMultipleSelection: false
+                ) { result in
+                    switch result {
+                    case .success(let urls):
+                        guard let url = urls.first else { return }
+                        importConfig(from: url)
+                    case .failure(let error):
+                        errorMessage = .init(error.localizedDescription)
                     }
                 }
-            }
-        }
-        .sheet(isPresented: $showExportSheet) {
-            if let url = exportURL {
-                ShareSheet(activityItems: [url])
-            }
         }
         .alert(item: $errorMessage) { msg in
-            DashboardLogger.error("received error: \(String(describing: msg))")
+            dashboardLogger.error("received error: \(String(describing: msg))")
             return Alert(title: Text("common.error"), message: Text(msg.text))
         }
     }
@@ -317,7 +314,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             context.insert(profile)
             selectedProfileId = profile.id
         } catch {
-            DashboardLogger.error("import failed: \(error)")
+            dashboardLogger.error("import failed: \(error)")
             errorMessage = .init(error.localizedDescription)
         }
     }
@@ -334,11 +331,10 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             let url = FileManager.default.temporaryDirectory
                 .appendingPathComponent("\(safeName).toml")
             try encoded.write(to: url, atomically: true, encoding: .utf8)
-            showManageSheet = false
-            exportURL = url
-            showExportSheet = true
+            dashboardLogger.info("exporting to: \(url)")
+            exportURL = .init(url)
         } catch {
-            DashboardLogger.error("export failed: \(error)")
+            dashboardLogger.error("export failed: \(error)")
             errorMessage = .init(error.localizedDescription)
         }
     }
@@ -350,11 +346,10 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
         }
         do {
             let config = NetworkConfig(from: selectedProfile.profile, name: selectedProfile.name)
-            showManageSheet = false
             editText = try TOMLEncoder().encode(config).string ?? ""
             showEditSheet = true
         } catch {
-            DashboardLogger.error("edit load failed: \(error)")
+            dashboardLogger.error("edit load failed: \(error)")
             errorMessage = .init(error.localizedDescription)
         }
     }
@@ -373,7 +368,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             }
             showEditSheet = false
         } catch {
-            DashboardLogger.error("edit save failed: \(error)")
+            dashboardLogger.error("edit save failed: \(error)")
             errorMessage = .init(error.localizedDescription)
         }
     }
@@ -392,5 +387,13 @@ struct DashboardView_Previews: PreviewProvider {
             )
         )
         .environmentObject(manager)
+    }
+}
+
+struct IdentifiableURL: Identifiable {
+    var id: URL { self.url }
+    var url: URL
+    init(_ url: URL) {
+        self.url = url
     }
 }

@@ -16,10 +16,39 @@ protocol NEManagerProtocol: ObservableObject {
     func disconnect() async
     func fetchRunningInfo(_ callback: @escaping ((NetworkStatus) -> Void))
     func updateName(name: String, server: String) async
+    func exportExtensionLogs() async throws -> URL
 }
 
 class NEManager: NEManagerProtocol {
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "NEManager")
+
+    private enum ProviderCommand: String {
+        case exportOSLog = "export_oslog"
+        case runningInfo = "running_info"
+    }
+
+    private struct ProviderMessageResponse: Codable {
+        let ok: Bool
+        let path: String?
+        let error: String?
+    }
+
+    enum NEManagerError: LocalizedError {
+        case providerUnavailable
+        case invalidResponse
+        case exportFailed(String)
+
+        var errorDescription: String? {
+            switch self {
+            case .providerUnavailable:
+                return "provider unavailable"
+            case .invalidResponse:
+                return "invalid response"
+            case .exportFailed(let message):
+                return message
+            }
+        }
+    }
 
     private var manager: NETunnelProviderManager?
     private var connection: NEVPNConnection?
@@ -190,7 +219,8 @@ class NEManager: NEManagerProtocol {
         guard let session = manager.connection as? NETunnelProviderSession,
               session.status != .invalid else { return }
         do {
-            try session.sendProviderMessage(Data()) { data in
+            let message = ProviderCommand.runningInfo.rawValue.data(using: .utf8) ?? Data()
+            try session.sendProviderMessage(message) { data in
                 guard let data else { return }
                 Self.logger.debug("fetchRunningInfo() received data: \(String(data: data, encoding: .utf8) ?? data.description)")
                 let info: NetworkStatus
@@ -204,6 +234,39 @@ class NEManager: NEManagerProtocol {
             }
         } catch {
             Self.logger.error("fetchRunningInfo() failed: \(String(describing: error))")
+        }
+    }
+
+    func exportExtensionLogs() async throws -> URL {
+        guard let manager,
+              let session = manager.connection as? NETunnelProviderSession,
+              session.status == .connected else {
+            throw NEManagerError.providerUnavailable
+        }
+        guard let message = ProviderCommand.exportOSLog.rawValue.data(using: .utf8) else {
+            throw NEManagerError.invalidResponse
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try session.sendProviderMessage(message) { data in
+                    guard let data else {
+                        continuation.resume(throwing: NEManagerError.invalidResponse)
+                        return
+                    }
+                    do {
+                        let response = try JSONDecoder().decode(ProviderMessageResponse.self, from: data)
+                        if response.ok, let path = response.path {
+                            continuation.resume(returning: URL(fileURLWithPath: path))
+                        } else {
+                            continuation.resume(throwing: NEManagerError.exportFailed(response.error ?? "export failed"))
+                        }
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            } catch {
+                continuation.resume(throwing: error)
+            }
         }
     }
 }
@@ -240,6 +303,10 @@ class MockNEManager: NEManagerProtocol {
 
     func fetchRunningInfo(_ callback: @escaping ((NetworkStatus) -> Void)) {
         callback(MockNEManager.dummyRunningInfo)
+    }
+
+    func exportExtensionLogs() async throws -> URL {
+        throw NEManager.NEManagerError.providerUnavailable
     }
     
     static var dummyRunningInfo: NetworkStatus {
