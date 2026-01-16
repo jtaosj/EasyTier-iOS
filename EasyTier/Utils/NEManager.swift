@@ -194,9 +194,8 @@ class NEManager: NEManagerProtocol {
             options.magicDNS = true
         }
         
-        let dnsArray: [String] = profile.profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
-        if !dnsArray.isEmpty {
-            options.dns = dnsArray
+        if profile.profile.enableOverrideDNS {
+            options.dns = profile.profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
         }
         
         return options
