@@ -103,6 +103,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
             } footer: {
                 Text("advanced_help")
             }
+            .disabled(manager.status != .disconnected)
 
             Section("about.title") {
                 LabeledContent("app") {

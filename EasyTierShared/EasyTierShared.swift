@@ -1,7 +1,7 @@
 import NetworkExtension
 import os
 
-public let APP_BUNDLE_ID: String = "group.site.yinmo.easytier"
+public let APP_BUNDLE_ID: String = "site.yinmo.easytier"
 public let APP_GROUP_ID: String = "group.site.yinmo.easytier"
 public let LOG_FILENAME: String = "easytier.log"
 

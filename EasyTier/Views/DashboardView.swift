@@ -231,7 +231,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                 try? await manager.load()
             }
             // Register Darwin notification observer for tunnel errors
-            darwinObserver = DNObserver(name: "site.yinmo.easytier.tunnel.error") {
+            darwinObserver = DNObserver(name: "\(APP_BUNDLE_ID).error") {
                 // Read the latest error from shared App Group defaults
                 let defaults = UserDefaults(suiteName: APP_GROUP_ID)
                 if let msg = defaults?.string(forKey: "TunnelLastError") {
