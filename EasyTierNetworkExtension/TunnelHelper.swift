@@ -6,6 +6,35 @@ import EasyTierShared
 
 let magicDNSCIDR = RunningIPv4CIDR(from: "100.100.100.101/32")!
 
+struct TunnelIPState: Equatable {
+    let v4Address: String?
+    let v4SubnetMask: String?
+    
+    let v6Address: String?
+    let v6PrefixLength: Int?
+
+    init(from settings: NEPacketTunnelNetworkSettings?) {
+        let v4 = settings?.ipv4Settings
+        self.v4Address = v4?.addresses.first
+        self.v4SubnetMask = v4?.subnetMasks.first
+
+        let v6 = settings?.ipv6Settings
+        self.v6Address = v6?.addresses.first
+        self.v6PrefixLength = v6?.networkPrefixLengths.first?.intValue
+    }
+    
+    init() {
+        v4Address = nil
+        v4SubnetMask = nil
+        v6Address = nil
+        v6PrefixLength = nil
+    }
+    
+    var isEmpty: Bool {
+        return v4Address == nil && v6Address == nil
+    }
+}
+
 func tunnelFileDescriptor() -> Int32? {
     logger.warning("tunnelFileDescriptor() use fallback")
     var ctlInfo = ctl_info()
