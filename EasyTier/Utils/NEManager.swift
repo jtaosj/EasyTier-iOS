@@ -194,10 +194,6 @@ class NEManager: NEManagerProtocol {
             options.magicDNS = true
         }
         
-        if profile.profile.enableOverrideDNS {
-            options.dns = profile.profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
-        }
-        
         return options
     }
     
