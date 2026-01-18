@@ -112,6 +112,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
                 LabeledContent("version") {
                     Text(appVersion)
                 }
+                Link("about.privacy_policy", destination: URL(string: "https://easytier.cn/guide/privacy.html")!)
                 Link("about.homepage", destination: URL(string: "https://github.com/EasyTier/EasyTier-iOS")!)
                 
                 NavigationLink("about.license", value: SettingsPane.license)
