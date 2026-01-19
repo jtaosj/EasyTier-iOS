@@ -22,6 +22,7 @@ public struct EasyTierOptions: Codable {
     public var routes: [String] = []
     public var logLevel: LogLevel = .info
     public var magicDNS: Bool = false
+    public var dns: [String] = []
     
     public init() {}
 }

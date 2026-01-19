@@ -162,11 +162,23 @@ func buildIPv4Routes(info: RunningInfo?, options: EasyTierOptions) -> [NEIPv4Rou
 }
 
 func buildDNSServers(options: EasyTierOptions) -> NEDNSSettings? {
-    guard options.magicDNS else { return nil }
-    let settings = NEDNSSettings(servers: [magicDNSCIDR.address.description])
-    settings.matchDomains = ["et.net"]
-    logger.info("buildDNSServers() enabled magic dns")
-    settings.searchDomains = ["et.net"]
+    var settings: NEDNSSettings
+    if !options.dns.isEmpty {
+        logger.info("buildDNSServers() use override dns: \(options.dns.count)")
+        settings = .init(servers: options.dns)
+        settings.matchDomains = [""]
+        settings.searchDomains = ["et.net"]
+    } else if options.magicDNS {
+        settings = .init(servers: [magicDNSCIDR.address.description])
+        settings.matchDomains = ["et.net"]
+    } else {
+        return nil
+    }
+    
+    if options.magicDNS {
+        logger.info("buildDNSServers() enabled magic dns")
+        settings.searchDomains = ["et.net"]
+    }
     return settings
 }
 

@@ -167,6 +167,7 @@ struct NetworkConfig: Codable {
     
     /// Mapped from Rust `Vec<cidr::Ipv4Cidr>`
     var routes: [String]?
+    var overrideDNS: [String]?
     
     var socks5Proxy: String?
     
@@ -195,6 +196,7 @@ struct NetworkConfig: Codable {
         case proxyNetwork = "proxy_network"
         case vpnPortalConfig = "vpn_portal_config"
         case routes
+        case overrideDNS = "override_dns"
         case socks5Proxy = "socks5_proxy"
         case portForward = "port_forward"
         case flags
@@ -357,6 +359,8 @@ extension NetworkConfig {
         profile.relayNetworkWhitelist = def.relayNetworkWhitelist
         profile.enableManualRoutes = def.enableManualRoutes
         profile.routes = def.routes
+        profile.enableOverrideDNS = def.enableOverrideDNS
+        profile.overrideDNS = def.overrideDNS
         profile.portForwards = def.portForwards
         profile.exitNodes = def.exitNodes
         profile.enableSocks5 = def.enableSocks5
@@ -448,6 +452,11 @@ extension NetworkConfig {
                 let parsed = splitCIDR(item, defaultLength: "32")
                 return .init(ip: parsed.ip, length: parsed.length)
             }
+        }
+
+        if let overrideDNS, !overrideDNS.isEmpty {
+            profile.enableOverrideDNS = true
+            profile.overrideDNS = overrideDNS.map { .init($0) }
         }
 
         if let exitNodes, !exitNodes.isEmpty {

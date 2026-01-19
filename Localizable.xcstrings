@@ -295,6 +295,22 @@
         }
       }
     },
+    "common_text.add_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "添加 DNS"
+          }
+        }
+      }
+    },
     "common_text.add_exit_node" : {
       "localizations" : {
         "en" : {
@@ -2514,6 +2530,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "开放网络"
+          }
+        }
+      }
+    },
+    "override_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Override DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖 DNS"
+          }
+        }
+      }
+    },
+    "override_dns_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Override system DNS. You should add magic DNS manually if you enable both settings."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖系统 DNS。如果也同时启用了魔法 DNS，需要手动添加。"
           }
         }
       }

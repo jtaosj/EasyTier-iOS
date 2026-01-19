@@ -126,6 +126,27 @@ struct NetworkEditView: View {
                 }
             }
             
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableOverrideDNS
+                )
+                if profile.enableOverrideDNS {
+                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
+                        HStack {
+                            Text("address")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: dns.text)
+                        }
+                    })
+                }
+            } header: {
+                Text("override_dns")
+            } footer: {
+                Text("override_dns_help")
+            }
+            
             proxyCIDRsSettings
             
             Section("vpn_portal_config") {
