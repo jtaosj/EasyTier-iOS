@@ -163,7 +163,10 @@ class NEManager: NEManagerProtocol {
     
     static func generateOptions(_ profile: ProfileSummary) throws -> EasyTierOptions {
         var options = EasyTierOptions()
-        let config = NetworkConfig(from: profile.profile, name: profile.name)
+        var config = NetworkConfig(from: profile.profile, name: profile.name)
+        if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {
+            config.hostname = DefaultDeviceName
+        }
 
         let encoded: String
         do {

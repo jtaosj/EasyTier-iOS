@@ -87,7 +87,7 @@ struct NetworkEditView: View {
                 switch profile.networkingMethod {
                 case .publicServer:
                     LabeledContent("status.server") {
-                        Text(profile.publicServerURL)
+                        TextField("public_server", text: $profile.publicServerURL)
                             .multilineTextAlignment(.trailing)
                     }
                 case .manual:

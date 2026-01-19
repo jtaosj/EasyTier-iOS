@@ -4,14 +4,15 @@ import SwiftData
 import UIKit
 #endif
 
+var DefaultDeviceName: String? {
+    #if canImport(UIKit)
+    return UIDevice.current.name
+    #else
+    return Host.current().localizedName
+    #endif
+}
+
 struct NetworkConfig: Codable {
-    private static var defaultDeviceName: String? {
-        #if canImport(UIKit)
-        return UIDevice.current.name
-        #else
-        return Host.current().localizedName
-        #endif
-    }
     struct Flags: Codable {
         var defaultProtocol: String?
         var devName: String?
