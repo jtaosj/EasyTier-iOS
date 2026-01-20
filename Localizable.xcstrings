@@ -3070,13 +3070,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only forward traffic from the whitelist networks, supporting wildcard strings, multiple network names can be separated by spaces.\nIf this parameter is empty, forwarding is disabled. By default, all networks are allowed.\ne.g.: '*' (all networks), 'def*' (networks with the prefix 'def'), 'net1 net2' (only allow net1 and net2)\n"
+            "value" : "Only forward traffic from the whitelist networks, supporting wildcard strings, multiple network names can be separated by spaces.\nIf this parameter is empty, forwarding is disabled. By default, all networks are allowed.\ne.g.: '\\*' (all networks), 'def\\*' (networks with the prefix 'def'), 'net1 net2' (only allow net1 and net2)\n"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅转发白名单网络的流量，支持通配符字符串。多个网络名称间可以使用英文空格间隔。\n如果该参数为空，则禁用转发。默认允许所有网络。\n例如：'*'（所有网络），'def*'（以def为前缀的网络），'net1 net2'（只允许net1和net2）\n"
+            "value" : "仅转发白名单网络的流量，支持通配符字符串。多个网络名称间可以使用英文空格间隔。\n如果该参数为空，则禁用转发。默认允许所有网络。\n例如：’\\*’（所有网络），’def\\*’（以def为前缀的网络），‘net1 net2’（只允许net1和net2）\n"
           }
         }
       }

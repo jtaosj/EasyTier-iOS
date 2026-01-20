@@ -107,7 +107,7 @@ struct NetworkEditView: View {
         Form {
             Section("general") {
                 LabeledContent("hostname") {
-                    TextField("common_text.default", text: $profile.hostname.bound)
+                    TextField("common_text.default", text: $profile.hostname)
                         .multilineTextAlignment(.trailing)
                 }
 
@@ -398,20 +398,6 @@ struct NetworkEditView: View {
                 .buttonStyle(.borderedProminent)
             }
         }
-    }
-}
-
-extension Optional where Wrapped == String {
-    fileprivate var bound: String {
-        get { self ?? "" }
-        set { self = newValue.isEmpty ? nil : newValue }
-    }
-}
-
-extension Optional where Wrapped == Int {
-    fileprivate var bound: Int {
-        get { self ?? 0 }
-        set { self = newValue }
     }
 }
 

@@ -216,8 +216,8 @@ struct NetworkConfig: Codable {
         }
         
         self.instanceId = profile.id.uuidString.lowercased()
-        if let hostname = profile.hostname, !hostname.isEmpty {
-            self.hostname = hostname
+        if !profile.hostname.isEmpty {
+            self.hostname = profile.hostname
         }
         self.dhcp = profile.dhcp
         self.instanceName = profile.networkName
@@ -268,6 +268,10 @@ struct NetworkConfig: Codable {
         
         if profile.enableManualRoutes {
             self.routes = profile.routes.map { $0.cidrString }
+        }
+        
+        if profile.enableOverrideDNS {
+            self.overrideDNS = profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
         }
         
         if !profile.exitNodes.isEmpty {
@@ -446,7 +450,7 @@ extension NetworkConfig {
             }
         }
 
-        if let routes, !routes.isEmpty {
+        if let routes {
             profile.enableManualRoutes = true
             profile.routes = routes.map { item in
                 let parsed = splitCIDR(item, defaultLength: "32")
@@ -454,12 +458,12 @@ extension NetworkConfig {
             }
         }
 
-        if let overrideDNS, !overrideDNS.isEmpty {
+        if let overrideDNS {
             profile.enableOverrideDNS = true
             profile.overrideDNS = overrideDNS.map { .init($0) }
         }
 
-        if let exitNodes, !exitNodes.isEmpty {
+        if let exitNodes {
             profile.exitNodes = exitNodes.map { .init($0) }
         }
 
@@ -468,7 +472,7 @@ extension NetworkConfig {
             profile.socks5Port = port
         }
 
-        if let mappedListeners, !mappedListeners.isEmpty {
+        if let mappedListeners {
             profile.mappedListeners = mappedListeners.map { .init($0) }
         }
 

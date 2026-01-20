@@ -55,7 +55,7 @@ struct NetworkProfile: Identifiable, Equatable {
     var networkName: String = "easytier"
     var dhcp: Bool = true
     var virtualIPv4: CIDR = CIDR(ip: "10.144.144.0", length: "24")
-    var hostname: String? = nil
+    var hostname: String = ""
     var networkSecret: String = ""
 
     var networkingMethod: NetworkingMethod = NetworkingMethod.publicServer
