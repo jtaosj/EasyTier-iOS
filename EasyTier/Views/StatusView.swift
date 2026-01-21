@@ -1,6 +1,7 @@
 import Combine
 import Foundation
 import SwiftUI
+import UIKit
 
 import EasyTierShared
 
@@ -15,6 +16,7 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
     @State var selectedInfoKind: InfoKind = .peerInfo
     @State var selectedPeerRoute: SelectedPeerRoute?
     @State var showNodeInfo = false
+    @State var showIPInfo = false
     @State var showStunInfo = false
     @State var showNetworkSettings = false
     @State var lastNetworkSettings: TunnelNetworkSettingsSnapshot?
@@ -75,6 +77,9 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
         }
         .sheet(isPresented: $showNodeInfo) {
             NodeInfoSheet(status: $status)
+        }
+        .sheet(isPresented: $showIPInfo) {
+            IPInfoSheet(status: $status)
         }
         .sheet(isPresented: $showStunInfo) {
             StunInfoSheet(status: $status)
@@ -153,28 +158,30 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
     
     var localStatus: some View {
         Group {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(networkName)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text(status?.myNodeInfo?.version ?? String(localized: "not_available"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                StatusBadge(status: .init(status?.running))
-            }
-            .padding(.horizontal, 4)
-            .contentShape(Rectangle())
-            .onTapGesture {
+            Button {
                 manager.fetchLastNetworkSettings { settings in
                     DispatchQueue.main.async {
                         lastNetworkSettings = settings
                         showNetworkSettings = true
                     }
                 }
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(networkName)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        Text(status?.myNodeInfo?.version ?? String(localized: "not_available"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    StatusBadge(status: .init(status?.running))
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 4)
             }
+            .buttonStyle(.plain)
             
             HStack(spacing: 42) {
                 TrafficItem(
@@ -189,7 +196,7 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
 
             HStack(spacing: 42) {
                 Button {
-                    showNodeInfo = true
+                    showIPInfo = true
                 } label: {
                     StatItem(
                         label: "virtual_ipv4",
@@ -214,13 +221,24 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
     }
     
     var peerInfo: some View {
-        ForEach(status?.peerRoutePairs ?? []) { pair in
-            Button {
-                selectedPeerRoute = SelectedPeerRoute(id: pair.id)
-            } label: {
-                PeerRowView(pair: pair)
+        Group {
+            if let myNodeInfo = status?.myNodeInfo {
+                Button {
+                    showNodeInfo = true
+                } label: {
+                    LocalPeerRowView(myNodeInfo: myNodeInfo)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            
+            ForEach(status?.peerRoutePairs ?? []) { pair in
+                Button {
+                    selectedPeerRoute = SelectedPeerRoute(id: pair.id)
+                } label: {
+                    RemotePeerRowView(pair: pair)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -246,7 +264,108 @@ struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
     }
 }
 
-struct PeerRowView: View {
+struct PeerRowView<RightView>: View where RightView: View {
+    let color: Color
+    let iconSystemName: String
+    let hostname: String
+    let firstLineText: String
+    let secondLineText: String
+    @ViewBuilder let rightView: () -> RightView
+    
+    var body: some View {
+        HStack(alignment: .center) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.1))
+                    .frame(width: 44, height: 44)
+                Image(systemName: iconSystemName)
+                    .foregroundStyle(color)
+                    .symbolRenderingMode(.monochrome)
+
+            }.padding(.trailing, 8)
+
+            // Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(hostname)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    if !firstLineText.isEmpty {
+                        Text(firstLineText)
+                    }
+                    
+                    if !secondLineText.isEmpty {
+                        Text(secondLineText)
+                    }
+                }
+                .compatibleLabelSpacing(0)
+                .lineLimit(1)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // Metrics
+            rightView()
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+struct LocalPeerRowView: View {
+    let myNodeInfo: NetworkStatus.MyNodeInfo
+    
+    var iconSystemName: String {
+        switch UIDevice.current.userInterfaceIdiom {
+        case .phone:
+            "iphone"
+        case .pad:
+            "ipad"
+        case .mac:
+            "macbook"
+        case .vision:
+            "vision.pro"
+        default:
+            "macmini"
+        }
+    }
+    
+    var firstLineText: String {
+        if let id = myNodeInfo.peerID {
+            "ID: \(id)"
+        } else { "" }
+    }
+    
+    var secondLineText: String {
+        if let ip = myNodeInfo.virtualIPv4?.description {
+            "IP: \(ip)"
+        } else { "" }
+    }
+    
+    var body: some View {
+        PeerRowView(
+            color: .green,
+            iconSystemName: iconSystemName,
+            hostname: myNodeInfo.hostname,
+            firstLineText: firstLineText,
+            secondLineText: secondLineText,
+        ) {
+            Text("local")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.secondary.opacity(0.1))
+                .clipShape(Capsule())
+        }
+    }
+}
+
+struct RemotePeerRowView: View {
     let pair: NetworkStatus.PeerRoutePair
     
     var isPublicServer: Bool {
@@ -268,64 +387,40 @@ struct PeerRowView: View {
         guard let lossRates else { return nil }
         return lossRates.reduce(0, +) / Double(lossRates.count)
     }
+    
+    var firstLineText: String {
+        var infoLine: [String] = []
+        infoLine.append("ID: \(String(pair.route.peerId))")
+        if let conns = pair.peer?.conns, !conns.isEmpty {
+            let types = conns.compactMap(\.tunnel?.tunnelType);
+            if !types.isEmpty {
+                infoLine.append(Array(Set(types)).sorted().joined(separator: "&").uppercased())
+            }
+        }
+        return infoLine.joined(separator: " ")
+    }
+    
+    var secondLineText: String {
+        var infoLine: [String] = []
+        if let ip = pair.route.ipv4Addr {
+            infoLine.append("IP: \(ip.description)")
+            if let _ = pair.route.ipv6Addr {
+                infoLine.append("(+IPv6)")
+            }
+        } else if let ip = pair.route.ipv6Addr {
+            infoLine.append("IP: \(ip.description)")
+        }
+        return infoLine.joined(separator: " ")
+    }
 
     var body: some View {
-        HStack(alignment: .center) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill((isPublicServer ? Color.pink : Color.blue).opacity(0.1))
-                    .frame(width: 44, height: 44)
-                Image(systemName: isPublicServer ? "server.rack" : "rectangle.connected.to.line.below")
-                    .foregroundStyle(isPublicServer ? .pink : .blue)
-            }.padding(.trailing, 8)
-
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pair.route.hostname)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    if let text = ({
-                        var infoLine: [String] = []
-                        infoLine.append("ID: \(String(pair.route.peerId))")
-                        if let conns = pair.peer?.conns, !conns.isEmpty {
-                            let types = conns.compactMap(\.tunnel?.tunnelType);
-                            if !types.isEmpty {
-                                infoLine.append(Array(Set(types)).sorted().joined(separator: "&").uppercased())
-                            }
-                        }
-                        return infoLine.joined(separator: " ")
-                    })(), !text.isEmpty {
-                        Text(text)
-                    }
-                    
-                    if let text = ({
-                        var infoLine: [String] = []
-                        if let ip = pair.route.ipv4Addr {
-                            infoLine.append("IP: \(ip.description)")
-                            if let _ = pair.route.ipv6Addr {
-                                infoLine.append("(+IPv6)")
-                            }
-                        } else if let ip = pair.route.ipv6Addr {
-                            infoLine.append("IP: \(ip.description)")
-                        }
-                        return infoLine.joined(separator: " ")
-                    })(), !text.isEmpty {
-                        Text(text)
-                    }
-                }
-                .compatibleLabelSpacing(0)
-                .lineLimit(1)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            // Metrics
+        PeerRowView(
+            color: isPublicServer ? Color.pink : Color.blue,
+            iconSystemName: isPublicServer ? "server.rack" : "rectangle.connected.to.line.below",
+            hostname: pair.route.hostname,
+            firstLineText: firstLineText,
+            secondLineText: secondLineText
+        ) {
             VStack(alignment: .trailing, spacing: 4) {
                 if let latency {
                     HStack(spacing: 4) {

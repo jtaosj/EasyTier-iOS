@@ -1,15 +1,4 @@
 import Foundation
-#if canImport(UIKit)
-import UIKit
-#endif
-
-var DefaultDeviceName: String? {
-    #if canImport(UIKit)
-    return UIDevice.current.name
-    #else
-    return Host.current().localizedName
-    #endif
-}
 
 struct NetworkConfig: Codable {
     struct Flags: Codable {

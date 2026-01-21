@@ -400,7 +400,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加节点"
+            "value" : "添加对等节点"
           }
         }
       }
@@ -2020,6 +2020,22 @@
         }
       }
     },
+    "local" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地"
+          }
+        }
+      }
+    },
     "local_addr" : {
       "localizations" : {
         "en" : {
@@ -2516,6 +2532,9 @@
         }
       }
     },
+    "no_ip_information_available" : {
+
+    },
     "no_network_profile_found" : {
       "localizations" : {
         "en" : {
@@ -2607,7 +2626,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无可用节点信息"
+            "value" : "无可用对等节点信息"
           }
         }
       }
@@ -2847,7 +2866,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点"
+            "value" : "对等节点"
           }
         }
       }
@@ -2863,7 +2882,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点详情"
+            "value" : "对等节点详情"
           }
         }
       }
@@ -2879,7 +2898,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点 ID"
+            "value" : "对等节点 ID"
           }
         }
       }
@@ -2895,7 +2914,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点信息"
+            "value" : "对等节点信息"
           }
         }
       }

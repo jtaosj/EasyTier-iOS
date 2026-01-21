@@ -313,8 +313,40 @@ struct NodeInfoSheet: View {
                 if let nodeInfo {
                     Section("general") {
                         LabeledContent("hostname", value: nodeInfo.hostname)
+                        if let peerID = nodeInfo.peerID {
+                            LabeledContent("peer_id", value: String(peerID))
+                        }
                         LabeledContent("version", value: nodeInfo.version)
                         if let virtualIPv4 = nodeInfo.virtualIPv4 {
+                            LabeledContent("virtual_ipv4", value: virtualIPv4.description)
+                        }
+                    }
+                } else {
+                    Section {
+                        Text("no_node_information_available")
+                    }
+                }
+            }
+            .textSelection(.enabled)
+            .navigationTitle("node_information")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+struct IPInfoSheet: View {
+    @Binding var status: NetworkStatus?
+
+    var nodeInfo: NetworkStatus.MyNodeInfo? {
+        status?.myNodeInfo
+    }
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                if let nodeInfo {
+                    if let virtualIPv4 = nodeInfo.virtualIPv4 {
+                        Section("general") {
                             LabeledContent("virtual_ipv4", value: virtualIPv4.description)
                         }
                     }
@@ -355,12 +387,12 @@ struct NodeInfoSheet: View {
                     }
                 } else {
                     Section {
-                        Text("no_node_information_available")
+                        Text("no_ip_information_available")
                     }
                 }
             }
             .textSelection(.enabled)
-            .navigationTitle("node_information")
+            .navigationTitle("ip_information")
             .navigationBarTitleDisplayMode(.inline)
         }
     }

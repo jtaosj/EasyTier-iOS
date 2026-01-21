@@ -2,6 +2,7 @@ import Foundation
 import Combine
 import NetworkExtension
 import WidgetKit
+import UIKit
 import os
 
 import EasyTierShared
@@ -161,7 +162,7 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
         var options = EasyTierOptions()
         var config = NetworkConfig(from: profile)
         if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {
-            config.hostname = DefaultDeviceName
+            config.hostname = UIDevice.current.name
         }
 
         let encoded: String
@@ -427,7 +428,8 @@ class MockNEManager: NetworkExtensionManagerProtocol {
             ),
             stunInfo: NetworkStatus.STUNInfo(udpNATType: .symmetricEasyInc, tcpNATType: .fullCone, lastUpdateTime: Date().timeIntervalSince1970 - 10),
             listeners: [NetworkStatus.Url(url: "tcp://0.0.0.0:11010"), NetworkStatus.Url(url: "udp://0.0.0.0:11010")],
-            vpnPortalCfg: "[Interface]\nPrivateKey = [REDACTED]\nAddress = 10.144.144.1/24\nListenPort = 22022\n\n[Peer]\nPublicKey = [REDACTED]\nAllowedIPs = 10.144.144.2/32"
+            vpnPortalCfg: "[Interface]\nPrivateKey = [REDACTED]\nAddress = 10.144.144.1/24\nListenPort = 22022\n\n[Peer]\nPublicKey = [REDACTED]\nAllowedIPs = 10.144.144.2/32",
+            peerID: 114514,
         )
         
         let peerRoute1 = NetworkStatus.Route(peerId: 123, ipv4Addr: .init(address: .init("10.144.144.10")!, networkLength: 24), nextHopPeerId: 123, cost: 1, pathLatency: 8, proxyCIDRs: [], hostname: "peer-1-ubuntu", stunInfo: NetworkStatus.STUNInfo(udpNATType: .fullCone, tcpNATType: .symmetric, lastUpdateTime: Date().timeIntervalSince1970 - 20), instId: id, version: "0.10.0")

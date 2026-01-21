@@ -175,6 +175,7 @@ struct NetworkStatus: Codable {
         var stunInfo: STUNInfo?
         var listeners: [Url]? = nil
         var vpnPortalCfg: String?
+        var peerID: Int?
 
         enum CodingKeys: String, CodingKey {
             case virtualIPv4 = "virtual_ipv4"
@@ -183,6 +184,7 @@ struct NetworkStatus: Codable {
             case stunInfo = "stun_info"
             case listeners
             case vpnPortalCfg = "vpn_portal_cfg"
+            case peerID = "peer_id"
         }
     }
 
