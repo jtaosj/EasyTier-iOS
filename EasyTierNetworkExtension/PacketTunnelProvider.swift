@@ -19,6 +19,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private static weak var current: PacketTunnelProvider?
     private var lastOptions: EasyTierOptions?
     private var lastAppliedSettings: TunnelNetworkSettingsSnapshot?
+    private var needReapplySettings: Bool = false
 
     private func handleRustStop() {
         // Called from FFI callback on an arbitrary thread
@@ -61,13 +62,14 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         DispatchQueue.global().async { [weak self] in
             guard let self else { return }
             if self.reasserting {
-                logger.info("enqueueSettingsUpdate(): update in progress, skipping")
+                logger.info("enqueueSettingsUpdate() update in progress, waiting")
+                self.needReapplySettings = true
                 return
             }
-            self.reasserting = true
-            logger.info("enqueueSettingsUpdate(): starting settings update")
-            self.applyNetworkSettings() { [weak self] _ in
-                self?.reasserting = false
+            logger.info("enqueueSettingsUpdate() starting settings update")
+            self.applyNetworkSettings() { error in
+                guard let error else { return }
+                logger.info("enqueueSettingsUpdate() failed with error: \(error)")
             }
         }
     }
@@ -78,19 +80,31 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             completion("cannot get options")
             return
         }
+        self.reasserting = true
+        self.needReapplySettings = false
+        let wrappedCompletion: (Error?) -> Void = { error in
+            DispatchQueue.global().sync {
+                completion(error)
+                self.reasserting = false
+                if self.needReapplySettings {
+                    self.needReapplySettings = false
+                    self.applyNetworkSettings(completion)
+                }
+            }
+        }
         let settings = buildSettings(options)
         logger.info("applyNetworkSettings() applying settings")
         let newSnapshot = snapshotSettings(settings)
         let needSetTunFd = shouldUpdateTunFd(old: lastAppliedSettings, new: newSnapshot)
         self.setTunnelNetworkSettings(settings) { [weak self] error in
             guard let self else {
-                completion(error)
+                wrappedCompletion(error)
                 return
             }
             if let error {
                 logger.error("handleRunningInfoChanged() failed to setTunnelNetworkSettings: \(error, privacy: .public)")
                 self.notifyHostAppError(error.localizedDescription)
-                completion(error)
+                wrappedCompletion(error)
                 return
             }
             if needSetTunFd {
@@ -102,7 +116,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                         let err = extractRustString(errPtr)
                         logger.error("handleRunningInfoChanged() failed to set tun fd to \(tunFd): \(err, privacy: .public)")
                         self.notifyHostAppError(err ?? "Unknown")
-                        completion("failed to set tun fd")
+                        wrappedCompletion("failed to set tun fd")
                         return
                     }
                 } else {
@@ -112,7 +126,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
             self.lastAppliedSettings = newSnapshot
             logger.info("applyNetworkSettings() settings applied")
-            completion(nil)
+            wrappedCompletion(nil)
         }
     }
 
@@ -171,11 +185,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
         }
         registerRunningInfoCallback()
-        self.reasserting = true
-        applyNetworkSettings() {
-            self.reasserting = true
-            completionHandler($0)
-        }
+        applyNetworkSettings(completionHandler)
     }
     
     override func stopTunnel(with reason: NEProviderStopReason, completionHandler: @escaping () -> Void) {
