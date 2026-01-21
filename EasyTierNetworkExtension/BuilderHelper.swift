@@ -124,7 +124,6 @@ func buildDNSServers(options: EasyTierOptions) -> NEDNSSettings? {
         logger.info("buildDNSServers() use override dns: \(options.dns.count)")
         settings = .init(servers: options.dns)
         settings.matchDomains = [""]
-        settings.searchDomains = ["et.net"]
     } else if options.magicDNS {
         settings = .init(servers: [magicDNSCIDR.address.description])
         settings.matchDomains = ["et.net"]
