@@ -2441,6 +2441,9 @@
         }
       }
     },
+    "no_peer_information_available" : {
+
+    },
     "no_stun_information_available" : {
       "localizations" : {
         "en" : {
