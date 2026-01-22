@@ -27,11 +27,15 @@ struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
     }
 }
 
-struct MainView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        ContentView(manager: manager)
-        ContentView(manager: manager)
-            .previewInterfaceOrientation(.landscapeLeft)
-    }
+#if DEBUG
+#Preview("Content") {
+    let manager = MockNEManager()
+    return ContentView(manager: manager)
 }
+
+@available(iOS 17.0, *)
+#Preview("Content Landscape", traits: .landscapeLeft) {
+    let manager = MockNEManager()
+    ContentView(manager: manager)
+}
+#endif

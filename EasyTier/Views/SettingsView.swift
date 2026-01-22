@@ -281,13 +281,10 @@ struct SettingsView<Manager: NetworkExtensionManagerProtocol>: View {
     }
 }
 
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        SettingsView(manager: manager)
-            .environmentObject(manager)
-        SettingsView(manager: manager)
-            .previewInterfaceOrientation(.landscapeLeft)
-            .environmentObject(manager)
-    }
+#if DEBUG
+#Preview("Settings Portrait") {
+    let manager = MockNEManager()
+    SettingsView(manager: manager)
+        .environmentObject(manager)
 }
+#endif

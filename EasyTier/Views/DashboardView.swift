@@ -558,14 +558,6 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     }
 }
 
-struct DashboardView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        DashboardView(manager: manager)
-        .environmentObject(manager)
-    }
-}
-
 struct IdentifiableURL: Identifiable {
     var id: URL { self.url }
     var url: URL
@@ -573,3 +565,12 @@ struct IdentifiableURL: Identifiable {
         self.url = url
     }
 }
+
+
+#if DEBUG
+#Preview("Dashboard") {
+    let manager = MockNEManager()
+    DashboardView(manager: manager)
+        .environmentObject(manager)
+}
+#endif

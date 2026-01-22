@@ -408,16 +408,12 @@ struct NetworkEditView: View {
     }
 }
 
-struct NetworkConfigurationView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var profile = NetworkProfile()
-        NavigationStack {
-            NetworkEditView(profile: $profile)
-        }
-        
-        NavigationStack {
-            NetworkEditView(profile: $profile)
-        }
-        .previewInterfaceOrientation(.landscapeLeft)
+#if DEBUG
+@available(iOS 17.0, *)
+#Preview("Network Edit Portrait") {
+    @Previewable @State var profile = NetworkProfile()
+    NavigationStack {
+        NetworkEditView(profile: $profile)
     }
 }
+#endif
