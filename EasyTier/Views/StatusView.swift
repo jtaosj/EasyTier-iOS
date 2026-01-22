@@ -306,7 +306,6 @@ struct PeerRowView<RightView>: View where RightView: View {
                         Text(secondLineText)
                     }
                 }
-                .compatibleLabelSpacing(0)
                 .lineLimit(1)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -586,10 +585,21 @@ struct StatItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(label, systemImage: icon)
-                .font(.caption)
+            if #available(iOS 26.0, *) {
+                Label(label, systemImage: icon)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .labelIconToTitleSpacing(2)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                    Text(label)
+                        .font(.caption)
+                }
+                .padding(.leading, 4)
                 .foregroundStyle(.secondary)
-                .compatibleLabelSpacing(2)
+            }
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -642,16 +652,6 @@ struct StatusBadge: View {
         .padding(.vertical, 6)
         .background(badgeColor.opacity(0.1))
         .clipShape(Capsule())
-    }
-}
-
-extension View {
-    func compatibleLabelSpacing(_ spacing: CGFloat) -> some View {
-        if #available(iOS 26.0, *) {
-            return self.labelIconToTitleSpacing(spacing)
-        } else {
-            return self
-        }
     }
 }
 
