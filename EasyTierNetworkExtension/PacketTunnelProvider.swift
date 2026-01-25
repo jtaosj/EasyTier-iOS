@@ -6,6 +6,7 @@ import Foundation
 import EasyTierShared
 
 let loggerSubsystem = "\(APP_BUNDLE_ID).tunnel"
+let debounceInterval = 0.5
 let logger = Logger(subsystem: loggerSubsystem, category: "swift")
 
 private struct ProviderMessageResponse: Codable {
@@ -20,23 +21,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     private var lastOptions: EasyTierOptions?
     private var lastAppliedSettings: TunnelNetworkSettingsSnapshot?
     private var needReapplySettings: Bool = false
-
-    private func handleRustStop() {
-        // Called from FFI callback on an arbitrary thread
-        var msgPtr: UnsafePointer<CChar>? = nil
-        var errPtr: UnsafePointer<CChar>? = nil
-        let ret = get_latest_error_msg(&msgPtr, &errPtr)
-        if ret == 0, let msg = extractRustString(msgPtr) {
-            logger.error("handleRustStop(): \(msg, privacy: .public)")
-            // Inform host app and cancel the tunnel on global queue
-            DispatchQueue.global().async {
-                self.notifyHostAppError(msg)
-                self.cancelTunnelWithError(msg)
-            }
-        } else if let err = extractRustString(errPtr) {
-            logger.error("handleRustStop() failed to get latest error: \(err, privacy: .public)")
-        }
-    }
     
     private func postDarwinNotification(_ name: String) {
         let center = CFNotificationCenterGetDarwinNotifyCenter()
@@ -52,10 +36,56 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         // Wake the host app via Darwin notification
         postDarwinNotification("\(APP_BUNDLE_ID).error")
     }
+    
+    private func registerRunningInfoCallback() {
+        let infoChangedCallback: @convention(c) () -> Void = {
+            PacketTunnelProvider.current?.handleRunningInfoChanged()
+        }
+        var errPtr: UnsafePointer<CChar>? = nil
+        let ret = register_running_info_callback(infoChangedCallback, &errPtr)
+        if ret != 0 {
+            let err = extractRustString(errPtr)
+            logger.error("registerRunningInfoCallback() failed: \(err ?? "Unknown", privacy: .public)")
+        } else {
+            logger.info("registerRunningInfoCallback() registered")
+        }
+    }
 
     private func handleRunningInfoChanged() {
         logger.warning("handleRunningInfoChanged(): triggered")
         enqueueSettingsUpdate()
+    }
+    
+    private func registerRustStopCallback() {
+        // Register FFI stop callback to capture crashes/stop events
+        let rustStopCallback: @convention(c) () -> Void = {
+            PacketTunnelProvider.current?.handleRustStop()
+        }
+        var regErrPtr: UnsafePointer<CChar>? = nil
+        let regRet = register_stop_callback(rustStopCallback, &regErrPtr)
+        if regRet != 0 {
+            let regErr = extractRustString(regErrPtr)
+            logger.error("startTunnel() failed to register stop callback: \(regErr ?? "Unknown", privacy: .public)")
+        } else {
+            logger.info("startTunnel() registered FFI stop callback")
+        }
+    }
+    
+    private func handleRustStop() {
+        // Called from FFI callback on an arbitrary thread
+        var msgPtr: UnsafePointer<CChar>? = nil
+        var errPtr: UnsafePointer<CChar>? = nil
+        let ret = get_latest_error_msg(&msgPtr, &errPtr)
+        if ret == 0, let msg = extractRustString(msgPtr) {
+            logger.error("handleRustStop(): \(msg, privacy: .public)")
+            // Inform host app and cancel the tunnel on global queue
+            DispatchQueue.global().async {
+                self.notifyHostAppError(msg)
+                self.cancelTunnelWithError(msg)
+            }
+        } else if let err = extractRustString(errPtr) {
+            logger.error("handleRustStop() failed to get latest error: \(err, privacy: .public)")
+        }
     }
 
     private func enqueueSettingsUpdate() {
@@ -75,6 +105,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     private func applyNetworkSettings(_ completion: @escaping ((any Error)?) -> Void) {
+        Thread.sleep(forTimeInterval: debounceInterval)
         guard let options = lastOptions else {
             logger.error("applyNetworkSettings() cannot get options")
             completion("cannot get options")
@@ -93,9 +124,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             }
         }
         let settings = buildSettings(options)
-        logger.info("applyNetworkSettings() applying settings")
         let newSnapshot = snapshotSettings(settings)
         let needSetTunFd = shouldUpdateTunFd(old: lastAppliedSettings, new: newSnapshot)
+        logger.info("applyNetworkSettings() need set tunfd: \(needSetTunFd) applying settings: \(settings, privacy: .public)")
         self.setTunnelNetworkSettings(settings) { [weak self] error in
             guard let self else {
                 wrappedCompletion(error)
@@ -130,20 +161,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         }
     }
 
-    private func registerRunningInfoCallback() {
-        let infoChangedCallback: @convention(c) () -> Void = {
-            PacketTunnelProvider.current?.handleRunningInfoChanged()
-        }
-        var errPtr: UnsafePointer<CChar>? = nil
-        let ret = register_running_info_callback(infoChangedCallback, &errPtr)
-        if ret != 0 {
-            let err = extractRustString(errPtr)
-            logger.error("registerRunningInfoCallback() failed: \(err ?? "Unknown", privacy: .public)")
-        } else {
-            logger.info("registerRunningInfoCallback() registered")
-        }
-    }
-
     override func startTunnel(options: [String : NSObject]?, completionHandler: @escaping (Error?) -> Void) {
         logger.warning("startTunnel(): triggered")
         PacketTunnelProvider.current = self
@@ -170,20 +187,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             completionHandler(err)
             return
         }
-        // Register FFI stop callback to capture crashes/stop events
-        let rustStopCallback: @convention(c) () -> Void = {
-            PacketTunnelProvider.current?.handleRustStop()
-        }
-        do {
-            var regErrPtr: UnsafePointer<CChar>? = nil
-            let regRet = register_stop_callback(rustStopCallback, &regErrPtr)
-            if regRet != 0 {
-                let regErr = extractRustString(regErrPtr)
-                logger.error("startTunnel() failed to register stop callback: \(regErr ?? "Unknown", privacy: .public)")
-            } else {
-                logger.info("startTunnel() registered FFI stop callback")
-            }
-        }
+        registerRustStopCallback()
         registerRunningInfoCallback()
         applyNetworkSettings(completionHandler)
     }
