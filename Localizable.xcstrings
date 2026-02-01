@@ -760,6 +760,22 @@
         }
       }
     },
+    "default_server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default Server"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认服务器"
+          }
+        }
+      }
+    },
     "details" : {
       "localizations" : {
         "en" : {
@@ -3280,22 +3296,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "公网 IPv6"
-          }
-        }
-      }
-    },
-    "public_server" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Public Server"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "公共服务器"
           }
         }
       }

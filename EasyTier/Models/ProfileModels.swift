@@ -8,16 +8,18 @@ struct BoolFlag: Identifiable {
     let help: LocalizedStringKey?
 }
 
+let defaultServerURL: String = "tcp://public.easytier.top:11010"
+
 struct NetworkProfile: Identifiable, Equatable {
     enum NetworkingMethod: Int, Codable, CaseIterable, Identifiable {
         var id: Self { self }
-        case publicServer = 0
+        case defaultServer = 0
         case custom = 1
         case standalone = 2
         
         var description: LocalizedStringKey {
             switch self {
-            case .publicServer: return "public_server"
+            case .defaultServer: return "default_server"
             case .custom: return "custom"
             case .standalone: return "standalone"
             }
@@ -35,20 +37,24 @@ struct NetworkProfile: Identifiable, Equatable {
 
     nonisolated struct CIDR: Codable, Hashable, Identifiable {
         var id = UUID()
-        var ip: String = "0.0.0.0"
-        var length: String = "32"
+        var ip: String = ""
+        var length: String = ""
         
         var cidrString: String {
-            "\(ip)/\(length)"
+            if ip.isEmpty && length.isEmpty {
+                ""
+            } else {
+                "\(ip)/\(length)"
+            }
         }
     }
 
     nonisolated struct ProxyCIDR: Codable, Hashable, Identifiable {
         var id = UUID()
-        var cidr: String = "0.0.0.0"
+        var cidr: String = ""
         var enableMapping: Bool = false
-        var mappedCIDR: String = "0.0.0.0"
-        var length: String = "32"
+        var mappedCIDR: String = ""
+        var length: String = ""
     }
     
     var id: UUID
@@ -58,9 +64,7 @@ struct NetworkProfile: Identifiable, Equatable {
     var hostname: String = ""
     var networkSecret: String = ""
 
-    var networkingMethod: NetworkingMethod = NetworkingMethod.publicServer
-
-    var publicServerURL: String = "tcp://public.easytier.top:11010"
+    var networkingMethod: NetworkingMethod = NetworkingMethod.defaultServer
     var peerURLs: [TextItem] = []
 
     var proxyCIDRs: [ProxyCIDR] = []

@@ -217,8 +217,8 @@ struct NetworkConfig: Codable {
         }
         
         switch profile.networkingMethod {
-        case .publicServer:
-            self.peer = [PeerConfig(uri: profile.publicServerURL)]
+        case .defaultServer:
+            self.peer = [PeerConfig(uri: defaultServerURL)]
         case .custom:
             self.peer = profile.peerURLs.compactMap { $0.text.isEmpty ? nil : PeerConfig(uri: $0.text) }
         case .standalone:
@@ -318,9 +318,7 @@ struct NetworkConfig: Codable {
         
         self.flags = tempFlags
     }
-}
-
-extension NetworkConfig {
+    
     func apply(to profile: inout NetworkProfile) {
         let def = NetworkProfile(id: profile.id)
 
@@ -329,7 +327,6 @@ extension NetworkConfig {
         profile.hostname = def.hostname
         profile.networkSecret = def.networkSecret
         profile.networkingMethod = def.networkingMethod
-        profile.publicServerURL = def.publicServerURL
         profile.peerURLs = def.peerURLs
         profile.proxyCIDRs = def.proxyCIDRs
         profile.enableVPNPortal = def.enableVPNPortal
@@ -385,9 +382,8 @@ extension NetworkConfig {
         }
 
         if let peer, !peer.isEmpty {
-            if peer.count == 1 && peer[0].uri == def.publicServerURL {  // future: public server list
-                profile.networkingMethod = .publicServer
-                profile.publicServerURL = peer[0].uri
+            if peer.count == 1 && peer[0].uri == defaultServerURL {  // future: public server list
+                profile.networkingMethod = .defaultServer
             } else {
                 profile.networkingMethod = .custom
                 profile.peerURLs = peer.map { .init($0.uri) }

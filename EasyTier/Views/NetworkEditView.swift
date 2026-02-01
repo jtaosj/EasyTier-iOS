@@ -100,9 +100,9 @@ struct NetworkEditView: View {
                 .pickerStyle(.segmented)
 
                 switch profile.networkingMethod {
-                case .publicServer:
+                case .defaultServer:
                     LabeledContent("server") {
-                        Text(profile.publicServerURL)
+                        Text(defaultServerURL)
                             .multilineTextAlignment(.trailing)
                     }
                 case .custom:
@@ -120,11 +120,6 @@ struct NetworkEditView: View {
     var advancedSettings: some View {
         Form {
             Section {
-//                LabeledContent("Device Name") {
-//                    TextField("Default", text: $profile.devName)
-//                        .multilineTextAlignment(.trailing)
-//                }
-
                 LabeledContent("mtu") {
                     TextField(
                         "common_text.default",
@@ -285,11 +280,28 @@ struct NetworkEditView: View {
                 Text("override_dns_help")
             }
         }
+        .navigationTitle("dns_settings")
+        .scrollDismissesKeyboard(.immediately)
     }
     
     var routeSettings: some View {
         Form {
             proxyCIDRsSettings
+            
+            Section {
+                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: { ip in
+                    HStack {
+                        Text("address")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        IPv4Field(ip: ip.text)
+                    }
+                })
+            } header: {
+                Text("exit_nodes")
+            } footer: {
+                Text("exit_nodes_help")
+            }
             
             Section {
                 Toggle("common_text.enable", isOn: $profile.enableManualRoutes)
@@ -308,22 +320,9 @@ struct NetworkEditView: View {
             } footer: {
                 Text("manual_routes_help")
             }
-            
-            Section {
-                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: { ip in
-                    HStack {
-                        Text("address")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        IPv4Field(ip: ip.text)
-                    }
-                })
-            } header: {
-                Text("exit_nodes")
-            } footer: {
-                Text("exit_nodes_help")
-            }
         }
+        .navigationTitle("route_settings")
+        .scrollDismissesKeyboard(.immediately)
     }
 
     var portForwardsSettings: some View {
