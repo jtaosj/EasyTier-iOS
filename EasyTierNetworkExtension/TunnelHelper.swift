@@ -41,10 +41,14 @@ extension PacketTunnelProvider {
         guard hasIPAddresses(new) else { return false }
         guard let old else { return true }
         let oldV4 = old.ipv4?.addresses.first
+        let oldV4Subnet = old.ipv4?.subnetMasks.first
         let oldV6 = old.ipv6?.addresses.first
+        let oldV6PrefixLength = old.ipv6?.networkPrefixLengths.first
         let newV4 = new.ipv4?.addresses.first
+        let newV4Subnet = new.ipv4?.subnetMasks.first
         let newV6 = new.ipv6?.addresses.first
-        return oldV4 != newV4 || oldV6 != newV6
+        let newV6PrefixLength = new.ipv6?.networkPrefixLengths.first
+        return oldV4 != newV4 || oldV4Subnet != newV4Subnet || oldV6 != newV6 || oldV6PrefixLength != newV6PrefixLength
     }
 
     private func hasIPAddresses(_ settings: TunnelNetworkSettingsSnapshot) -> Bool {
@@ -95,8 +99,9 @@ func tunnelFileDescriptor() -> Int32? {
             }
         }
         if addr.sc_id == ctlInfo.ctl_id {
-            logger.info("tunnelFileDescriptor() found fd: \(fd, privacy: .public)")
-            return fd
+            let dupFd = dup(fd)
+            logger.info("tunnelFileDescriptor() found fd: \(fd, privacy: .public), dup to: \(dupFd, privacy: .public)")
+            return dupFd
         }
     }
     return nil

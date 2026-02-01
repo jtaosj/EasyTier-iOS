@@ -79,7 +79,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         if ret == 0, let msg = extractRustString(msgPtr) {
             logger.error("handleRustStop(): \(msg, privacy: .public)")
             // Inform host app and cancel the tunnel on global queue
-            DispatchQueue.global().async {
+            DispatchQueue.main.async {
                 self.notifyHostAppError(msg)
                 self.cancelTunnelWithError(msg)
             }
@@ -89,7 +89,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     private func enqueueSettingsUpdate() {
-        DispatchQueue.global().async { [weak self] in
+        DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             if self.reasserting {
                 logger.info("enqueueSettingsUpdate() update in progress, waiting")
@@ -105,16 +105,27 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
     }
 
     private func applyNetworkSettings(_ completion: @escaping ((any Error)?) -> Void) {
+        guard !self.reasserting else {
+            logger.error("applyNetworkSettings() still in progress")
+            completion("still in progress")
+            return
+        }
+        self.reasserting = true
         Thread.sleep(forTimeInterval: debounceInterval)
         guard let options = lastOptions else {
             logger.error("applyNetworkSettings() cannot get options")
             completion("cannot get options")
             return
         }
-        self.reasserting = true
         self.needReapplySettings = false
+        let settings = buildSettings(options)
+        let newSnapshot = snapshotSettings(settings)
+        let needSetTunFd = shouldUpdateTunFd(old: lastAppliedSettings, new: newSnapshot)
         let wrappedCompletion: (Error?) -> Void = { error in
-            DispatchQueue.global().sync {
+            DispatchQueue.main.sync {
+                if error == nil {
+                    self.lastAppliedSettings = newSnapshot
+                }
                 completion(error)
                 self.reasserting = false
                 if self.needReapplySettings {
@@ -123,10 +134,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                 }
             }
         }
-        let settings = buildSettings(options)
-        let newSnapshot = snapshotSettings(settings)
-        let needSetTunFd = shouldUpdateTunFd(old: lastAppliedSettings, new: newSnapshot)
-        logger.info("applyNetworkSettings() need set tunfd: \(needSetTunFd) applying settings: \(settings, privacy: .public)")
+        logger.info("applyNetworkSettings() need set tunfd: \(needSetTunFd), settings: \(settings, privacy: .public)")
         self.setTunnelNetworkSettings(settings) { [weak self] error in
             guard let self else {
                 wrappedCompletion(error)
@@ -155,7 +163,6 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
                     notifyHostAppError("no available tun fd")
                 }
             }
-            self.lastAppliedSettings = newSnapshot
             logger.info("applyNetworkSettings() settings applied")
             wrappedCompletion(nil)
         }
