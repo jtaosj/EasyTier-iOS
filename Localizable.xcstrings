@@ -728,6 +728,22 @@
         }
       }
     },
+    "custom" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义"
+          }
+        }
+      }
+    },
     "default_conn_id" : {
       "localizations" : {
         "en" : {
@@ -1096,6 +1112,22 @@
         }
       }
     },
+    "dns_settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS 设置"
+          }
+        }
+      }
+    },
     "download" : {
       "localizations" : {
         "en" : {
@@ -1229,38 +1261,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "将 TCP 流量转为 KCP 流量，降低传输延迟，提升传输速度。"
-          }
-        }
-      }
-    },
-    "enable_magic_dns" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable Magic DNS"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "启用魔法 DNS"
-          }
-        }
-      }
-    },
-    "enable_magic_dns_help" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable magic dns, all nodes in the network can access each other by domain name, e.g.: node1.et.net."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "启用魔法 DNS，允许通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。"
           }
         }
       }
@@ -1430,7 +1430,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "e.g. 1080"
+            "value" : "e.g.: 1080"
           }
         },
         "zh-Hans" : {
@@ -1441,12 +1441,28 @@
         }
       }
     },
+    "example.tld_dns_zone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e.g.: et.net."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如：et.net."
+          }
+        }
+      }
+    },
     "example.vpn_portal_listen_port" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "e.g. 22022"
+            "value" : "e.g.: 22022"
           }
         },
         "zh-Hans" : {
@@ -2132,6 +2148,38 @@
         }
       }
     },
+    "magic_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Magic DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法 DNS"
+          }
+        }
+      }
+    },
+    "magic_dns_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With magic DNS, all nodes in the network can access each other by domain name, e.g.: node1.et.net."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利用魔法 DNS，可以通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。"
+          }
+        }
+      }
+    },
     "main.dashboard" : {
       "localizations" : {
         "en" : {
@@ -2144,22 +2192,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仪表盘"
-          }
-        }
-      }
-    },
-    "manual" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manual"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "手动"
           }
         }
       }
@@ -2783,7 +2815,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "覆盖系统 DNS。如果也同时启用了魔法 DNS，需要手动添加。"
+            "value" : "覆盖系统 DNS。开启时如果也启用了魔法 DNS，需要手动添加。"
           }
         }
       }
@@ -3257,13 +3289,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Relay all peer rpc packets, even if the peer is not in the relay network whitelist.\nThis can help peers not in relay network whitelist to establish p2p connection.\n"
+            "value" : "Relay all peer rpc packets, even if the peer is not in the relay network whitelist.\nThis can help peers not in relay network whitelist to establish p2p connection."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "允许转发所有对等节点的 RPC 数据包，即使对等节点不在转发网络白名单中。\n这可以帮助白名单外网络中的对等节点建立 P2P 连接。\n"
+            "value" : "允许转发所有对等节点的 RPC 数据包，即使对等节点不在转发网络白名单中。\n这可以帮助白名单外网络中的对等节点建立 P2P 连接。"
           }
         }
       }
@@ -3683,6 +3715,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "TCP NAT 类型"
+          }
+        }
+      }
+    },
+    "tld_dns_zone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TLD"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顶级域"
           }
         }
       }

@@ -10,6 +10,7 @@ struct NetworkEditView: View {
     enum EditPane: Identifiable, Hashable {
         var id: Self { self }
         case advanced
+        case dns
         case portForwards
     }
     
@@ -21,6 +22,7 @@ struct NetworkEditView: View {
         List(selection: $selectedPane) {
             basicSettings
             NavigationLink("advanced_settings", value: EditPane.advanced)
+            NavigationLink("dns_settings", value: EditPane.dns)
             NavigationLink("port_forwards", value: EditPane.portForwards)
         }
         .scrollDismissesKeyboard(.immediately)
@@ -31,6 +33,8 @@ struct NetworkEditView: View {
             switch selectedPane {
             case .advanced:
                 advancedSettings
+            case .dns:
+                dnsSettings
             case .portForwards:
                 portForwardsSettings
             case nil:
@@ -64,7 +68,7 @@ struct NetworkEditView: View {
                     TextField("easytier", text: $profile.networkName)
                         .multilineTextAlignment(.trailing)
                 }
-
+                
                 LabeledContent("network_secret") {
                     SecureField(
                         "common_text.empty",
@@ -72,7 +76,14 @@ struct NetworkEditView: View {
                     )
                     .multilineTextAlignment(.trailing)
                 }
+                
+                LabeledContent("hostname") {
+                    TextField("common_text.default", text: $profile.hostname)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
 
+            Section("peer") {
                 Picker(
                     "networking_method",
                     selection: $profile.networkingMethod
@@ -90,7 +101,7 @@ struct NetworkEditView: View {
                         Text(profile.publicServerURL)
                             .multilineTextAlignment(.trailing)
                     }
-                case .manual:
+                case .custom:
                     ListEditor(newItemTitle: "common_text.add_peer", items: $profile.peerURLs, addItemFactory: { "" }, rowContent: {
                         TextField("example.peer_url", text: $0.text)
                             .font(.body.monospaced())
@@ -105,11 +116,6 @@ struct NetworkEditView: View {
     var advancedSettings: some View {
         Form {
             Section("general") {
-                LabeledContent("hostname") {
-                    TextField("common_text.default", text: $profile.hostname)
-                        .multilineTextAlignment(.trailing)
-                }
-
 //                LabeledContent("Device Name") {
 //                    TextField("Default", text: $profile.devName)
 //                        .multilineTextAlignment(.trailing)
@@ -132,27 +138,6 @@ struct NetworkEditView: View {
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
                 }
-            }
-            
-            Section {
-                Toggle(
-                    "common_text.enable",
-                    isOn: $profile.enableOverrideDNS
-                )
-                if profile.enableOverrideDNS {
-                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
-                        HStack {
-                            Text("address")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            IPv4Field(ip: dns.text)
-                        }
-                    })
-                }
-            } header: {
-                Text("override_dns")
-            } footer: {
-                Text("override_dns_help")
             }
             
             proxyCIDRsSettings
@@ -281,6 +266,51 @@ struct NetworkEditView: View {
         .scrollDismissesKeyboard(.immediately)
         .sheet(isPresented: $showProxyCIDREditor) {
             proxyCIDREditor
+        }
+    }
+    
+    var dnsSettings: some View {
+        Form {
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableMagicDNS
+                )
+                if profile.enableMagicDNS {
+                    LabeledContent("tld_dns_zone") {
+                        TextField(
+                            "example.tld_dns_zone",
+                            text: $profile.magicDNSTLD
+                        )
+                        .multilineTextAlignment(.trailing)
+                    }
+                }
+            } header: {
+                Text("magic_dns")
+            } footer: {
+                Text("magic_dns_help")
+            }
+            
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableOverrideDNS
+                )
+                if profile.enableOverrideDNS {
+                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
+                        HStack {
+                            Text("address")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: dns.text)
+                        }
+                    })
+                }
+            } header: {
+                Text("override_dns")
+            } footer: {
+                Text("override_dns_help")
+            }
         }
     }
 

@@ -219,7 +219,7 @@ struct NetworkConfig: Codable {
         switch profile.networkingMethod {
         case .publicServer:
             self.peer = [PeerConfig(uri: profile.publicServerURL)]
-        case .manual:
+        case .custom:
             self.peer = profile.peerURLs.compactMap { $0.text.isEmpty ? nil : PeerConfig(uri: $0.text) }
         case .standalone:
             break
@@ -295,6 +295,7 @@ struct NetworkConfig: Codable {
         tempFlags.enableQUICProxy = takeIfChanged(profile.enableQUICProxy, def.enableQUICProxy)
         tempFlags.disableQUICInput = takeIfChanged(profile.disableQUICInput, def.disableQUICInput)
         tempFlags.disableSymHolePunching = takeIfChanged(profile.disableSymHolePunching, def.disableSymHolePunching)
+        tempFlags.tldDNSZone = takeIfChanged(profile.magicDNSTLD, def.magicDNSTLD)
         tempFlags.p2pOnly = takeIfChanged(profile.p2pOnly, def.p2pOnly)
         tempFlags.privateMode = takeIfChanged(profile.enablePrivateMode, def.enablePrivateMode)
         
@@ -384,7 +385,7 @@ extension NetworkConfig {
                 profile.networkingMethod = .publicServer
                 profile.publicServerURL = peer[0].uri
             } else {
-                profile.networkingMethod = .manual
+                profile.networkingMethod = .custom
                 profile.peerURLs = peer.map { .init($0.uri) }
             }
         } else {
@@ -535,6 +536,9 @@ extension NetworkConfig {
             }
             if let acceptDNS = flags.acceptDNS {
                 profile.enableMagicDNS = acceptDNS
+            }
+            if let tldDNSZone = flags.tldDNSZone {
+                profile.magicDNSTLD = tldDNSZone
             }
             if let privateMode = flags.privateMode {
                 profile.enablePrivateMode = privateMode

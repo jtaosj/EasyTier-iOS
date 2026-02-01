@@ -12,13 +12,13 @@ struct NetworkProfile: Identifiable, Equatable {
     enum NetworkingMethod: Int, Codable, CaseIterable, Identifiable {
         var id: Self { self }
         case publicServer = 0
-        case manual = 1
+        case custom = 1
         case standalone = 2
         
         var description: LocalizedStringKey {
             switch self {
             case .publicServer: return "public_server"
-            case .manual: return "manual"
+            case .custom: return "custom"
             case .standalone: return "standalone"
             }
         }
@@ -107,6 +107,8 @@ struct NetworkProfile: Identifiable, Equatable {
     var mappedListeners: [TextItem] = []
 
     var enableMagicDNS: Bool = false
+    var magicDNSTLD: String = "et.net."
+    
     var enablePrivateMode: Bool = false
     var enableOverrideDNS: Bool = false
     var overrideDNS: [TextItem] = []
@@ -205,11 +207,6 @@ struct NetworkProfile: Identifiable, Equatable {
             keyPath: \.disableSymHolePunching,
             label: "disable_sym_hole_punching",
             help: "disable_sym_hole_punching_help"
-        ),
-        .init(
-            keyPath: \.enableMagicDNS,
-            label: "enable_magic_dns",
-            help: "enable_magic_dns_help"
         ),
         .init(
             keyPath: \.enablePrivateMode,
