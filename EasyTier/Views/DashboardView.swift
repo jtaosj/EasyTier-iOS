@@ -455,7 +455,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 return
             }
             do {
-                let config = NetworkConfig(from: selectedProfile)
+                let config = selectedProfile.toConfig()
                 editText = try TOMLEncoder().encode(config).string ?? ""
                 showEditSheet = true
             } catch {
@@ -469,12 +469,11 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         Task { @MainActor in
             do {
                 let config = try TOMLDecoder().decode(NetworkConfig.self, from: editText)
-                guard var profile = selectedProfile else {
+                guard selectedProfile != nil else {
                     errorMessage = .init("Please select a network.")
                     return
                 }
-                config.apply(to: &profile)
-                selectedProfile = profile
+                selectedProfile = NetworkProfile(from: config)
                 scheduleSave()
                 showEditSheet = false
             } catch {

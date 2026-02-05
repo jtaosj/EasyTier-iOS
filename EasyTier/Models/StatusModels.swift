@@ -43,6 +43,8 @@ struct NetworkStatus: Codable {
         var kcpInput: Bool
         var noRelayKcp: Bool
         var supportConnListSync: Bool
+        var quicInput: Bool
+        var noRelayQuic: Bool
 
         enum CodingKeys: String, CodingKey {
             case isPublicServer = "is_public_server"
@@ -50,6 +52,8 @@ struct NetworkStatus: Codable {
             case kcpInput = "kcp_input"
             case noRelayKcp = "no_relay_kcp"
             case supportConnListSync = "support_conn_list_sync"
+            case quicInput = "quic_input"
+            case noRelayQuic = "no_relay_quic"
         }
     }
 

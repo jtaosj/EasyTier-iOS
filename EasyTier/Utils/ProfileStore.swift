@@ -72,7 +72,7 @@ enum ProfileStore {
     }
 
     static func save(_ profile: NetworkProfile, named configName: String) async throws {
-        let config = NetworkConfig(from: profile)
+        let config = profile.toConfig()
         let encoded = try TOMLEncoder().encode(config).string ?? ""
         let fileURL = try fileURL(forConfigName: configName)
         profileStoreLogger.debug("saving to \(fileURL.path): \(encoded)")

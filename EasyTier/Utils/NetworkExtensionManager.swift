@@ -161,7 +161,7 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
     
     static func generateOptions(_ profile: NetworkProfile) throws -> EasyTierOptions {
         var options = EasyTierOptions()
-        var config = NetworkConfig(from: profile)
+        var config = profile.toConfig()
         if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {
             config.hostname = UIDevice.current.name
         }
