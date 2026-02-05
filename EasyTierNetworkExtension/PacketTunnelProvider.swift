@@ -121,7 +121,7 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         let settings = buildSettings(options)
         let newSnapshot = snapshotSettings(settings)
         let wrappedCompletion: (Error?) -> Void = { error in
-            DispatchQueue.main.sync {
+            DispatchQueue.main.async {
                 if error == nil {
                     self.lastAppliedSettings = newSnapshot
                 }
