@@ -641,7 +641,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let lines = infos.map { info in
-            let label = String(localized: info.local ? "local" : "icloud")
+            let label = info.local ? String(localized: "local") : String(localized: "icloud")
             let time = info.modificationDate.map { formatter.string(from: $0) } ?? "-"
             let device = info.deviceName ?? UIDevice.current.name
             return "\(label): \(device) · \(time)"
