@@ -1,19 +1,33 @@
 import Combine
 import Foundation
 import SwiftUI
+import UIKit
 
-struct StatusView<Manager: NEManagerProtocol>: View {
-    @EnvironmentObject var manager: Manager
-    @Environment(\.scenePhase) private var scenePhase
+import EasyTierShared
+
+struct StatusView<Manager: NetworkExtensionManagerProtocol>: View {
+    @ObservedObject var manager: Manager
+    @Environment(\.scenePhase) var scenePhase
     @Environment(\.horizontalSizeClass) var sizeClass
-    @AppStorage("statusRefreshInterval") private var statusRefreshInterval: Double = 1.0
-    @State var timerSubscription: AnyCancellable?
+    @AppStorage("statusRefreshInterval") var statusRefreshInterval: Double = 1.0
+    @State var timer = Timer.publish(every: 1.0, on: .main, in: .common)
+    @State var timerSubscription: Cancellable?
     @State var status: NetworkStatus?
     
     @State var selectedInfoKind: InfoKind = .peerInfo
-    @State var selectedPeerRoutePair: NetworkStatus.PeerRoutePair?
+    @State var selectedPeerRoute: SelectedPeerRoute?
     @State var showNodeInfo = false
+    @State var showIPInfo = false
     @State var showStunInfo = false
+    @State var showNetworkSettings = false
+    @State var lastNetworkSettings: TunnelNetworkSettingsSnapshot?
+    
+    let networkName: String
+    
+    init(_ name: String, manager: Manager) {
+        networkName = name
+        _manager = ObservedObject(wrappedValue: manager)
+    }
     
     enum InfoKind: Identifiable, CaseIterable {
         var id: Self { self }
@@ -43,7 +57,7 @@ struct StatusView<Manager: NEManagerProtocol>: View {
         .onDisappear {
             stopTimer()
         }
-        .onChange(of: scenePhase) { _, newPhase in
+        .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
                 refreshStatus()
@@ -54,19 +68,32 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                 break
             }
         }
-        .onChange(of: statusRefreshInterval) { _, _ in
-            guard scenePhase == .active else { return }
+        .onChange(of: statusRefreshInterval) { _ in
+            guard timerSubscription != nil else { return }
             stopTimer()
             startTimer()
         }
-        .sheet(item: $selectedPeerRoutePair) { pair in
-            PeerConnDetailSheet(pair: pair)
+        .onReceive(timer) { _ in
+            if [.inactive, .background].contains(scenePhase) {
+                stopTimer()
+                return
+            }
+            refreshStatus()
+        }
+        .sheet(item: $selectedPeerRoute) { selection in
+            PeerConnDetailSheet(status: $status, peerRouteID: selection.id)
         }
         .sheet(isPresented: $showNodeInfo) {
-            NodeInfoSheet(nodeInfo: status?.myNodeInfo)
+            NodeInfoSheet(status: $status)
+        }
+        .sheet(isPresented: $showIPInfo) {
+            IPInfoSheet(status: $status)
         }
         .sheet(isPresented: $showStunInfo) {
-            StunInfoSheet(stunInfo: status?.myNodeInfo?.stunInfo)
+            StunInfoSheet(status: $status)
+        }
+        .sheet(isPresented: $showNetworkSettings) {
+            NetworkSettingsSheet(settings: $lastNetworkSettings)
         }
     }
     
@@ -96,7 +123,7 @@ struct StatusView<Manager: NEManagerProtocol>: View {
                         Text(kind.description).tag(kind)
                     }
                 }
-                .pickerStyle(.palette)
+                .pickerStyle(.segmented)
                 switch (selectedInfoKind) {
                 case .peerInfo:
                     peerInfo
@@ -139,19 +166,30 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     
     var localStatus: some View {
         Group {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(status?.myNodeInfo?.hostname ?? String(localized: "not_available"))
-                        .font(.title2)
-                        .fontWeight(.bold)
-                    Text(status?.myNodeInfo?.version ?? String(localized: "not_available"))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+            Button {
+                manager.fetchLastNetworkSettings { settings in
+                    DispatchQueue.main.async {
+                        lastNetworkSettings = settings
+                        showNetworkSettings = true
+                    }
                 }
-                Spacer()
-                StatusBadge(status: .init(status?.running))
+            } label: {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(networkName)
+                            .font(.title2)
+                            .fontWeight(.bold)
+                        Text(status?.myNodeInfo?.version ?? String(localized: "not_available"))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    StatusBadge(status: .init(status?.running))
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 4)
             }
-            .padding(.horizontal, 4)
+            .buttonStyle(.plain)
             
             HStack(spacing: 42) {
                 TrafficItem(
@@ -166,7 +204,7 @@ struct StatusView<Manager: NEManagerProtocol>: View {
 
             HStack(spacing: 42) {
                 Button {
-                    showNodeInfo = true
+                    showIPInfo = true
                 } label: {
                     StatItem(
                         label: "virtual_ipv4",
@@ -191,13 +229,24 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     }
     
     var peerInfo: some View {
-        ForEach(status?.peerRoutePairs ?? []) { pair in
-            Button {
-                selectedPeerRoutePair = pair
-            } label: {
-                PeerRowView(pair: pair)
+        Group {
+            if let myNodeInfo = status?.myNodeInfo {
+                Button {
+                    showNodeInfo = true
+                } label: {
+                    LocalPeerRowView(myNodeInfo: myNodeInfo)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            
+            ForEach(status?.peerRoutePairs ?? []) { pair in
+                Button {
+                    selectedPeerRoute = SelectedPeerRoute(id: pair.id)
+                } label: {
+                    RemotePeerRowView(pair: pair)
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 
@@ -210,11 +259,8 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     func startTimer() {
         guard timerSubscription == nil else { return }
         let interval = max(0.2, statusRefreshInterval)
-        timerSubscription = Timer.publish(every: interval, on: .main, in: .common)
-            .autoconnect()
-            .sink { _ in
-            refreshStatus()
-        }
+        timer = Timer.publish(every: interval, on: .main, in: .common)
+        timerSubscription = timer.connect()
     }
 
     private func stopTimer() {
@@ -223,7 +269,107 @@ struct StatusView<Manager: NEManagerProtocol>: View {
     }
 }
 
-struct PeerRowView: View {
+struct PeerRowView<RightView>: View where RightView: View {
+    let color: Color
+    let iconSystemName: String
+    let hostname: String
+    let firstLineText: String
+    let secondLineText: String
+    @ViewBuilder let rightView: () -> RightView
+    
+    var body: some View {
+        HStack(alignment: .center) {
+            // Icon
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.1))
+                    .frame(width: 44, height: 44)
+                Image(systemName: iconSystemName)
+                    .foregroundStyle(color)
+                    .symbolRenderingMode(.monochrome)
+
+            }.padding(.trailing, 8)
+
+            // Info
+            VStack(alignment: .leading, spacing: 4) {
+                Text(hostname)
+                    .font(.body)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    if !firstLineText.isEmpty {
+                        Text(firstLineText)
+                    }
+                    
+                    if !secondLineText.isEmpty {
+                        Text(secondLineText)
+                    }
+                }
+                .lineLimit(1)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            // Metrics
+            rightView()
+        }
+        .contentShape(Rectangle())
+    }
+}
+
+struct LocalPeerRowView: View {
+    let myNodeInfo: NetworkStatus.MyNodeInfo
+    
+    var iconSystemName: String {
+        switch UIDevice.current.userInterfaceIdiom {
+        case .phone:
+            "iphone"
+        case .pad:
+            "ipad"
+        case .mac:
+            "macbook"
+        case .vision:
+            "vision.pro"
+        default:
+            "macmini"
+        }
+    }
+    
+    var firstLineText: String {
+        if let id = myNodeInfo.peerID {
+            "ID: \(id)"
+        } else { "" }
+    }
+    
+    var secondLineText: String {
+        if let ip = myNodeInfo.virtualIPv4?.description {
+            "IP: \(ip)"
+        } else { "" }
+    }
+    
+    var body: some View {
+        PeerRowView(
+            color: .green,
+            iconSystemName: iconSystemName,
+            hostname: myNodeInfo.hostname,
+            firstLineText: firstLineText,
+            secondLineText: secondLineText,
+        ) {
+            Text("local")
+                .font(.caption2)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .background(.secondary.opacity(0.1))
+                .clipShape(Capsule())
+        }
+    }
+}
+
+struct RemotePeerRowView: View {
     let pair: NetworkStatus.PeerRoutePair
     
     var isPublicServer: Bool {
@@ -245,64 +391,40 @@ struct PeerRowView: View {
         guard let lossRates else { return nil }
         return lossRates.reduce(0, +) / Double(lossRates.count)
     }
+    
+    var firstLineText: String {
+        var infoLine: [String] = []
+        infoLine.append("ID: \(String(pair.route.peerId))")
+        if let conns = pair.peer?.conns, !conns.isEmpty {
+            let types = conns.compactMap(\.tunnel?.tunnelType);
+            if !types.isEmpty {
+                infoLine.append(Array(Set(types)).sorted().joined(separator: "&").uppercased())
+            }
+        }
+        return infoLine.joined(separator: " ")
+    }
+    
+    var secondLineText: String {
+        var infoLine: [String] = []
+        if let ip = pair.route.ipv4Addr {
+            infoLine.append("IP: \(ip.description)")
+            if let _ = pair.route.ipv6Addr {
+                infoLine.append("(+IPv6)")
+            }
+        } else if let ip = pair.route.ipv6Addr {
+            infoLine.append("IP: \(ip.description)")
+        }
+        return infoLine.joined(separator: " ")
+    }
 
     var body: some View {
-        HStack(alignment: .center) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill((isPublicServer ? Color.pink : Color.blue).opacity(0.1))
-                    .frame(width: 44, height: 44)
-                Image(systemName: isPublicServer ? "server.rack" : "rectangle.connected.to.line.below")
-                    .foregroundStyle(isPublicServer ? .pink : .blue)
-            }.padding(.trailing, 8)
-
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(pair.route.hostname)
-                    .font(.body)
-                    .fontWeight(.medium)
-                    .lineLimit(1)
-                
-                VStack(alignment: .leading, spacing: 4) {
-                    if let text = ({
-                        var infoLine: [String] = []
-                        infoLine.append("ID: \(String(pair.route.peerId))")
-                        if let conns = pair.peer?.conns, !conns.isEmpty {
-                            let types = conns.compactMap(\.tunnel?.tunnelType);
-                            if !types.isEmpty {
-                                infoLine.append(Array(Set(types)).sorted().joined(separator: "&").uppercased())
-                            }
-                        }
-                        return infoLine.joined(separator: " ")
-                    })(), !text.isEmpty {
-                        Text(text)
-                    }
-                    
-                    if let text = ({
-                        var infoLine: [String] = []
-                        if let ip = pair.route.ipv4Addr {
-                            infoLine.append("IP: \(ip.description)")
-                            if let _ = pair.route.ipv6Addr {
-                                infoLine.append("(+IPv6)")
-                            }
-                        } else if let ip = pair.route.ipv6Addr {
-                            infoLine.append("IP: \(ip.description)")
-                        }
-                        return infoLine.joined(separator: " ")
-                    })(), !text.isEmpty {
-                        Text(text)
-                    }
-                }
-                .compatibleLabelSpacing(0)
-                .lineLimit(1)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            // Metrics
+        PeerRowView(
+            color: isPublicServer ? Color.pink : Color.blue,
+            iconSystemName: isPublicServer ? "server.rack" : "rectangle.connected.to.line.below",
+            hostname: pair.route.hostname,
+            firstLineText: firstLineText,
+            secondLineText: secondLineText
+        ) {
             VStack(alignment: .trailing, spacing: 4) {
                 if let latency {
                     HStack(spacing: 4) {
@@ -356,12 +478,17 @@ struct PeerRowView: View {
     }
 }
 
+struct SelectedPeerRoute: Identifiable {
+    let id: Int
+}
+
 struct TrafficItem: View {
     let trafficType: TrafficType
     let value: Int?
     
     @State var diff: Double?
     @State var lastTime: Date?
+    @State var previousValue: Int?
 
     enum TrafficType {
         case Tx
@@ -431,16 +558,22 @@ struct TrafficItem: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .onChange(of: value) { oldValue, newValue in
-            guard let oldValue, let newValue else { return }
+        .onChange(of: value) { newValue in
+            guard let newValue else { return }
             guard let lastTime else {
                 lastTime = Date()
+                return
+            }
+            guard let previousValue else {
+                self.lastTime = Date()
+                previousValue = newValue
                 return
             }
             let currentTime = Date()
             let interval = currentTime.timeIntervalSince(lastTime)
             self.lastTime = currentTime
-            diff = max(Double(newValue - oldValue) / interval, 0)
+            diff = max(Double(newValue - previousValue) / interval, 0)
+            $previousValue.wrappedValue = newValue
         }
     }
 }
@@ -452,10 +585,21 @@ struct StatItem: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(label, systemImage: icon)
-                .font(.caption)
+            if #available(iOS 26.0, *) {
+                Label(label, systemImage: icon)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .labelIconToTitleSpacing(2)
+            } else {
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .font(.caption)
+                    Text(label)
+                        .font(.caption)
+                }
+                .padding(.leading, 4)
                 .foregroundStyle(.secondary)
-                .compatibleLabelSpacing(2)
+            }
             Text(value)
                 .font(.subheadline)
                 .fontWeight(.medium)
@@ -511,396 +655,10 @@ struct StatusBadge: View {
     }
 }
 
-struct TimelineLogPanel: View {
-    let events: [String]
-    
-    var timelineEntries: [TimelineEntry] {
-        TimelineEntry.parse(events)
-    }
-    
-    var body: some View {
-        if timelineEntries.isEmpty {
-            Text("no_parsed_events")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding()
-        } else {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(timelineEntries.enumerated()), id: \.element.id) { index, entry in
-                    TimelineRow(entry: entry, isLast: index == timelineEntries.count - 1)
-                }
-            }
-        }
-    }
+#if DEBUG
+#Preview("Status Portrait") {
+    let manager = MockNEManager()
+    StatusView("Example", manager: manager)
+        .environmentObject(manager)
 }
-
-struct TimelineRow: View {
-    let entry: TimelineEntry
-    let isLast: Bool
-    
-    var body: some View {
-        HStack(alignment: .top, spacing: 12) {
-            // Time Column
-            VStack(alignment: .trailing, spacing: 2) {
-                if let date = entry.date {
-                    Text(date, style: .time) // e.g., 2:31 PM
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                    
-                    Text(date.formatted(.dateTime.month().day())) // e.g., Jan 4
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                } else {
-                    Text("not_available")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.primary)
-                }
-            }
-            .padding(.top, 2)
-            
-            // Timeline Graphic (Dot + Line)
-            VStack(spacing: 0) {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 8, height: 8)
-                    .padding(.top, 6)
-                
-                if !isLast {
-                    Rectangle()
-                        .fill(Color.secondary.opacity(0.2))
-                        .frame(width: 1)
-                        .frame(maxHeight: .infinity)
-                }
-            }
-            .frame(width: 12)
-            
-            // JSON Content Bubble
-            VStack(alignment: .leading, spacing: 12) {
-                if let name = entry.name {
-                    Text(name)
-                        .font(.headline)
-                }
-                Text(entry.payload)
-                    .font(.system(.caption, design: .monospaced))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
-            }
-            .padding(.bottom, 24)
-        }
-    }
-}
-
-struct TimelineEntry: Identifiable {
-    var id: String { self.original }
-    let date: Date?
-    let name: String?
-    let payload: String
-    let original: String
-    
-    // Parser
-    static func parse(_ rawLines: [String]) -> [TimelineEntry] {
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        return rawLines.compactMap { line in
-            guard let data = line.data(using: .utf8),
-                  let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                  let timeStr = json["time"] as? String,
-                  let date = isoFormatter.date(from: timeStr),
-                  let eventData = json["event"] else {
-                return TimelineEntry(date: nil, name: nil, payload: line, original: line)
-            }
-            
-            let name: String?
-            let payload: Any
-            if let eventData = eventData as? [String: Any], eventData.count == 1, let name_ = eventData.keys.first, let payload_ = eventData[name_] {
-                name = name_
-                payload = payload_
-            } else {
-                name = nil
-                payload = eventData
-            }
-            
-            if let prettyData = try? JSONSerialization.data(withJSONObject: payload, options: [.prettyPrinted, .withoutEscapingSlashes, .fragmentsAllowed]),
-               let prettyString = String(data: prettyData, encoding: .utf8) {
-                return TimelineEntry(date: date, name: name, payload: prettyString, original: line)
-            }
-            return TimelineEntry(date: date, name: nil, payload: line, original: line)
-        }.sorted { $0.date ?? .distantPast > $1.date ?? .distantPast }
-    }
-}
-
-struct PeerConnDetailSheet: View {
-    let pair: NetworkStatus.PeerRoutePair
-
-    var conns: [NetworkStatus.PeerConnInfo] {
-        pair.peer?.conns ?? []
-    }
-
-    var body: some View {
-        NavigationStack {
-            Form {
-                Section("peer") {
-                    LabeledContent("hostname", value: pair.route.hostname)
-                    LabeledContent("peer_id", value: String(pair.route.peerId))
-                    if let ipv4 = pair.route.ipv4Addr {
-                        LabeledContent("ipv4_addr", value: ipv4.description)
-                    }
-                    if let ipv6 = pair.route.ipv6Addr {
-                        LabeledContent("ipv6_addr", value: ipv6.description)
-                    }
-                    LabeledContent("inst_id", value: String(pair.route.instId))
-                    LabeledContent("version", value: String(pair.route.version))
-                    LabeledContent("next_hop_peer_id", value: String(pair.route.nextHopPeerId))
-                    LabeledContent("cost", value: String(pair.route.cost))
-                    LabeledContent("path_latency", value: latencyValueString(pair.route.pathLatency))
-                    if let nextHopLatencyFirst = pair.route.nextHopPeerIdLatencyFirst {
-                        LabeledContent("next_hop_peer_id_latency_first", value: String(nextHopLatencyFirst))
-                    }
-                    if let costLatencyFirst = pair.route.costLatencyFirst {
-                        LabeledContent("cost_latency_first", value: String(costLatencyFirst))
-                    }
-                    if let pathLatencyLatencyFirst = pair.route.pathLatencyLatencyFirst {
-                        LabeledContent("path_latency_latency_first", value: latencyValueString(pathLatencyLatencyFirst))
-                    }
-                    if let featureFlags = pair.route.featureFlag {
-                        LabeledContent("feature_flag", value: featureFlagString(featureFlags))
-                    }
-                    if let peerInfo = pair.peer {
-                        if let defaultConnId = peerInfo.defaultConnId {
-                            LabeledContent("default_conn_id", value: uuidString(defaultConnId))
-                        }
-                        if !peerInfo.directlyConnectedConns.isEmpty {
-                            LabeledContent(
-                                "directly_connected_conns",
-                                value: peerInfo.directlyConnectedConns.map(uuidString).joined(separator: "\n")
-                            )
-                        }
-                    }
-                }
-                
-                if !pair.route.proxyCIDRs.isEmpty {
-                    Section("proxy_cidrs") {
-                        ForEach(pair.route.proxyCIDRs, id: \.hashValue) {
-                            Text($0)
-                        }
-                    }
-                }
-
-                if conns.isEmpty {
-                    Section("connections") {
-                        Text("no_connection_details_available")
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    ForEach(conns, id: \.connId) { conn in
-                        Section("connection_\(conn.connId)") {
-                            LabeledContent("peer_id", value: String(conn.peerId))
-                            LabeledContent("role", value: conn.isClient ? "Client" : "Server")
-                            LabeledContent("loss_rate", value: percentString(conn.lossRate))
-                            LabeledContent("closed", value: triState(conn.isClosed))
-
-                            LabeledContent("features", value: conn.features.isEmpty ? "None" : conn.features.joined(separator: ", "))
-
-                            if let tunnel = conn.tunnel {
-                                LabeledContent("tunnel_type", value: tunnel.tunnelType.uppercased())
-                                LabeledContent("local_addr", value: tunnel.localAddr.url)
-                                LabeledContent("remote_addr", value: tunnel.remoteAddr.url)
-                            }
-
-                            if let stats = conn.stats {
-                                LabeledContent("rx_bytes", value: formatBytes(stats.rxBytes))
-                                LabeledContent("tx_bytes", value: formatBytes(stats.txBytes))
-                                LabeledContent("rx_packets", value: String(stats.rxPackets))
-                                LabeledContent("tx_packets", value: String(stats.txPackets))
-                                LabeledContent("latency", value: latencyString(stats.latencyUs))
-                            }
-                        }
-                    }
-                }
-            }
-            .textSelection(.enabled)
-            .navigationTitle("peer_details")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-
-    private func formatBytes(_ value: Int) -> String {
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .binary
-        return formatter.string(fromByteCount: Int64(value))
-    }
-
-    private func latencyString(_ us: Int) -> String {
-        String(format: "%.1f ms", Double(us) / 1000.0)
-    }
-
-    private func latencyValueString(_ value: Int) -> String {
-        "\(value) ms"
-    }
-
-    private func percentString(_ value: Double) -> String {
-        String(format: "%.2f%%", value * 100)
-    }
-
-    private func triState(_ value: Bool?) -> String {
-        guard let value else { return "event.Unknown" }
-        return value ? "Yes" : "No"
-    }
-
-    private func uuidString(_ value: NetworkStatus.UUID) -> String {
-        String(format: "%08x-%08x-%08x-%08x", value.part1, value.part2, value.part3, value.part4)
-    }
-
-    private func featureFlagString(_ flags: NetworkStatus.PeerFeatureFlag) -> String {
-        var enabled: [String] = []
-        if flags.isPublicServer { enabled.append("is_public_server") }
-        if flags.avoidRelayData { enabled.append("avoid_relay_data") }
-        if flags.kcpInput { enabled.append("kcp_input") }
-        if flags.noRelayKcp { enabled.append("no_relay_kcp") }
-        if flags.supportConnListSync { enabled.append("support_conn_list_sync") }
-        return enabled.isEmpty ? "None" : enabled.joined(separator: ", ")
-    }
-}
-
-struct NodeInfoSheet: View {
-    let nodeInfo: NetworkStatus.NodeInfo?
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                if let nodeInfo {
-                    Section("general") {
-                        LabeledContent("hostname", value: nodeInfo.hostname)
-                        LabeledContent("version", value: nodeInfo.version)
-                        if let virtualIPv4 = nodeInfo.virtualIPv4 {
-                            LabeledContent("virtual_ipv4", value: virtualIPv4.description)
-                        }
-                    }
-                    
-                    if let ips = nodeInfo.ips {
-                        if ips.publicIPv4 != nil || ips.publicIPv6 != nil {
-                            Section("ip_information") {
-                                if let publicIPv4 = ips.publicIPv4 {
-                                    LabeledContent("public_ipv4", value: publicIPv4.description)
-                                }
-                                if let publicIPv6 = ips.publicIPv6 {
-                                    LabeledContent("public_ipv6", value: publicIPv6.description)
-                                }
-                            }
-                        }
-                        if let v4s = ips.interfaceIPv4s, !v4s.isEmpty {
-                            Section("interface_ipv4s") {
-                                ForEach(Array(Set(v4s)), id: \.hashValue) { ip in
-                                    Text(ip.description)
-                                }
-                            }
-                        }
-                        if let v6s = ips.interfaceIPv6s, !v6s.isEmpty {
-                            Section("interface_ipv6s") {
-                                ForEach(Array(Set(v6s)), id: \.hashValue) { ip in
-                                    Text(ip.description)
-                                }
-                            }
-                        }
-                    }
-                    
-                    if let listeners = nodeInfo.listeners, !listeners.isEmpty {
-                        Section("listeners") {
-                            ForEach(listeners, id: \.url) { listener in
-                                Text(listener.url)
-                            }
-                        }
-                    }
-                } else {
-                    Section {
-                        Text("no_node_information_available")
-                    }
-                }
-            }
-            .textSelection(.enabled)
-            .navigationTitle("node_information")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-    }
-}
-
-struct StunInfoSheet: View {
-    let stunInfo: NetworkStatus.STUNInfo?
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                if let stunInfo {
-                    Section("nat_types") {
-                        LabeledContent("udp_nat_type") {
-                            Text(stunInfo.udpNATType.description)
-                        }
-                        LabeledContent("tcp_nat_type") {
-                            Text(stunInfo.tcpNATType.description)
-                        }
-                    }
-                    
-                    Section("details") {
-                        LabeledContent("last_update", value: formatDate(stunInfo.lastUpdateTime))
-                        if let minPort = stunInfo.minPort {
-                            LabeledContent("min_port", value: String(minPort))
-                        }
-                        if let maxPort = stunInfo.maxPort {
-                            LabeledContent("max_port", value: String(maxPort))
-                        }
-                    }
-                    
-                    if !stunInfo.publicIPs.isEmpty {
-                        Section("public_ips") {
-                            ForEach(stunInfo.publicIPs, id: \.self) { ip in
-                                Text(ip)
-                            }
-                        }
-                    }
-                } else {
-                    Section {
-                        Text("no_stun_information_available")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            .navigationTitle("stun_information")
-            .navigationBarTitleDisplayMode(.inline)
-            .textSelection(.enabled)
-        }
-    }
-    
-    private func formatDate(_ timestamp: TimeInterval) -> String {
-        let date = Date(timeIntervalSince1970: timestamp)
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .medium
-        return formatter.string(from: date)
-    }
-}
-
-struct StatusView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        StatusView<MockNEManager>()
-            .environmentObject(manager)
-        
-        StatusView<MockNEManager>()
-            .environmentObject(manager)
-            .previewInterfaceOrientation(.landscapeLeft)
-    }
-}
-
-extension View {
-    func compatibleLabelSpacing(_ spacing: CGFloat) -> some View {
-        if #available(iOS 26.0, *) {
-            return self.labelIconToTitleSpacing(spacing)
-        } else {
-            return self
-        }
-    }
-}
+#endif

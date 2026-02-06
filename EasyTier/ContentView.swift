@@ -1,12 +1,13 @@
 import SwiftUI
-import SwiftData
 
 let columnWidth: CGFloat = 450
 
-struct ContentView<Manager: NEManagerProtocol>: View {
+struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
+    @ObservedObject var manager: Manager
+    
     var body: some View {
         TabView {
-            DashboardView<Manager>()
+            DashboardView(manager: manager)
                 .tabItem {
                     Image(systemName: "list.bullet.below.rectangle")
                     Text("main.dashboard")
@@ -16,7 +17,7 @@ struct ContentView<Manager: NEManagerProtocol>: View {
                     Image(systemName: "rectangle.and.text.magnifyingglass")
                     Text("logging")
                 }
-            SettingsView<Manager>()
+            SettingsView(manager: manager)
                 .tabItem {
                     Image(systemName: "gearshape")
                         .environment(\.symbolVariants, .none)
@@ -26,18 +27,15 @@ struct ContentView<Manager: NEManagerProtocol>: View {
     }
 }
 
-struct MainView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        ContentView<MockNEManager>()
-            .modelContainer(
-                try! ModelContainer(
-                    for: Schema([ProfileSummary.self, NetworkProfile.self]),
-                    configurations: ModelConfiguration(
-                        isStoredInMemoryOnly: true
-                    )
-                )
-            )
-            .environmentObject(manager)
-    }
+#if DEBUG
+#Preview("Content") {
+    let manager = MockNEManager()
+    return ContentView(manager: manager)
 }
+
+@available(iOS 17.0, *)
+#Preview("Content Landscape", traits: .landscapeLeft) {
+    let manager = MockNEManager()
+    ContentView(manager: manager)
+}
+#endif

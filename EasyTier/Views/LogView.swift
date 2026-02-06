@@ -31,7 +31,7 @@ struct LogView: View {
                             Text("").id(bottomID)
                         }
                         .padding()
-                        .onChange(of: tailer.logContent, initial: false) { _, _ in
+                        .onChange(of: tailer.logContent) { _ in
                             // Auto-scroll to bottom on update
                             withAnimation {
                                 proxy.scrollTo(bottomID, anchor: .bottom)
@@ -80,7 +80,7 @@ struct LogView: View {
             tailer.stop()
             wasWatchingBeforeBackground = false
         }
-        .onChange(of: scenePhase) { _, newPhase in
+        .onChange(of: scenePhase) { newPhase in
             switch newPhase {
             case .active:
                 if wasWatchingBeforeBackground {
@@ -121,36 +121,8 @@ struct LogView: View {
     }
 }
 
-struct LogView_Previews: PreviewProvider {
-    static var previews: some View {
-        LogView()
-            .onAppear {
-                // Start a timer to write logs automatically
-                Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                    writeSimulatedLog()
-                }
-            }
-    }
-
-    // Helper function to write to the file
-    static func writeSimulatedLog() {
-        // Must match the ID and Filename above
-        guard let url = FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: APP_GROUP_ID)?
-            .appendingPathComponent(LOG_FILENAME) else { return }
-
-        let message = "Preview Event: \(Date().formatted(date: .omitted, time: .standard))\n"
-
-        // Simple append logic
-        if let handle = try? FileHandle(forWritingTo: url) {
-            handle.seekToEndOfFile()
-            if let offset = try? handle.offset(), offset > 1000 {
-                try? handle.truncate(atOffset: 0)
-            }
-            handle.write(message.data(using: .utf8)!)
-            handle.closeFile()
-        } else {
-            try? message.write(to: url, atomically: true, encoding: .utf8)
-        }
-    }
+#if DEBUG
+#Preview("Log") {
+    LogView()
 }
+#endif

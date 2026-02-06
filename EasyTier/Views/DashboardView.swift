@@ -1,5 +1,5 @@
-import SwiftData
 import SwiftUI
+import Combine
 import NetworkExtension
 import os
 import TOMLKit
@@ -8,21 +8,23 @@ import EasyTierShared
 
 private let dashboardLogger = Logger(subsystem: APP_BUNDLE_ID, category: "main.dashboard")
 
-struct DashboardView<Manager: NEManagerProtocol>: View {
-    @Environment(\.modelContext) var context
+struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     @Environment(\.scenePhase) var scenePhase
-    @Query(sort: \ProfileSummary.createdAt) var networks: [ProfileSummary]
-
-    @EnvironmentObject var manager: Manager
-
-    @AppStorage("lastSelected") var lastSelected: String?
-    @State var selectedProfileId: UUID?
+    @ObservedObject var manager: Manager
+    
+    @AppStorage("selectedProfileName", store: UserDefaults(suiteName: APP_GROUP_ID)) var lastSelected: String?
+    @AppStorage("profilesUseICloud") var profilesUseICloud: Bool = false
+    
+    @StateObject var selectedSession = SelectedSession()
     @State var isLocalPending = false
 
     @State var showManageSheet = false
 
     @State var showNewNetworkAlert = false
     @State var newNetworkInput = ""
+    @State var showEditConfigNameAlert = false
+    @State var editConfigNameInput = ""
+    @State var editingProfileName: String?
 
     @State var showImportPicker = false
     @State var exportURL: IdentifiableURL?
@@ -30,14 +32,20 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
     @State var editText = ""
 
     @State var errorMessage: TextItem?
+    @State var showConflictAlert = false
+    @State var conflictConfigName: String?
+    @State var conflictDetails: String = ""
 
-    @State private var darwinObserver: DNObserver? = nil
+    @State var darwinObserver: DarwinNotificationObserver? = nil
+    
+    init(manager: Manager) {
+        _manager = ObservedObject(wrappedValue: manager)
+    }
 
-    var selectedProfile: ProfileSummary? {
-        guard let selectedProfileId else { return nil }
-        return networks.first {
-            $0.id == selectedProfileId
-        }
+    struct ProfileEntry: Identifiable, Equatable {
+        var id: String { configName }
+        var configName: String
+        var profile: NetworkProfile?
     }
 
     var isConnected: Bool {
@@ -49,12 +57,19 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
 
     var mainView: some View {
         Group {
-            if let selectedProfile {
-                @Bindable var profile = selectedProfile
+            if selectedSession.session != nil {
+                let profile = Binding(
+                    get: { selectedSession.session?.document.profile ?? NetworkProfile() },
+                    set: { newValue in
+                        guard selectedSession.session?.document.profile != newValue else { return }
+                        selectedSession.session?.document.profile = newValue
+                        selectedSession.objectWillChange.send()
+                    }
+                )
                 if isConnected {
-                    StatusView<Manager>()
+                    StatusView(profile.wrappedValue.networkName, manager: manager)
                 } else {
-                    NetworkEditView(name: $profile.name, profile: $profile.profile)
+                    NetworkEditView(profile: profile)
                         .disabled(isPending)
                 }
             } else {
@@ -74,45 +89,72 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
     }
 
     func createProfile() {
-        let profile = ProfileSummary(
-            name: newNetworkInput.isEmpty
-                ? "easytier" : newNetworkInput,
-            context: context
-        )
-        context.insert(profile)
-        selectedProfileId = profile.id
+        let baseName = newNetworkInput.isEmpty ? String(localized: "new_network") : newNetworkInput
+        guard let sanitizedName = availableConfigName(baseName) else { return }
+        let profile = NetworkProfile()
+        Task { @MainActor in
+            do {
+                try ProfileStore.save(profile, named: sanitizedName)
+                selectedSession.session = try await ProfileStore.openSession(named: sanitizedName)
+            } catch {
+                dashboardLogger.error("create profile failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
+            }
+        }
     }
 
     var sheetView: some View {
         NavigationStack {
             Form {
                 Section("network") {
-                    ForEach(networks, id: \.self) { item in
+                    let profiles = ProfileStore.loadIndexOrEmpty().map{ IdenticalTextItem($0) }
+                    ForEach(profiles) { item in
                         Button {
-                            if selectedProfileId == item.id {
-                                selectedProfileId = nil
+                            if selectedSession.session?.name == item.id {
+                                Task { @MainActor in
+                                    await closeSelectedSession()
+                                }
                             } else {
-                                selectedProfileId = item.id
+                                Task { @MainActor in
+                                    await loadProfile(item.id)
+                                }
                             }
                         } label: {
                             HStack {
-                                Text(item.name)
+                                Text(item.id)
                                     .foregroundColor(.primary)
                                 Spacer()
-                                if selectedProfileId == item.id {
+                                if selectedSession.session?.name == item.id {
                                     Image(systemName: "checkmark")
                                         .foregroundColor(.blue)
                                 }
                             }
                         }
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                editingProfileName = item.id
+                                editConfigNameInput = item.id
+                                showEditConfigNameAlert = true
+                            } label: {
+                                Label("rename", systemImage: "pencil")
+                            }
+                            .tint(.orange)
+                        }
                     }
                     .onDelete { indexSet in
                         withAnimation {
                             for index in indexSet {
-                                if selectedProfile == networks[index] {
-                                    selectedProfileId = nil
+                                Task { @MainActor in
+                                    do {
+                                        if selectedSession.session?.name == profiles[index].id {
+                                            await closeSelectedSession(save: false)
+                                        }
+                                        try ProfileStore.deleteProfile(named: profiles[index].id)
+                                    } catch {
+                                        dashboardLogger.error("delete profile failed: \(error)")
+                                        errorMessage = .init(error.localizedDescription)
+                                    }
                                 }
-                                context.delete(networks[index])
                             }
                         }
                     }
@@ -122,7 +164,11 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         showNewNetworkAlert = true
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "document.badge.plus")
+                            if #available(iOS 18.0, *) {
+                                Image(systemName: "document.badge.plus")
+                            } else {
+                                Image(systemName: "plus.app")
+                            }
                             Text("profile.create_network")
                         }
                     }
@@ -130,7 +176,11 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         presentEditInText()
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "long.text.page.and.pencil")
+                            if #available(iOS 18.4, *) {
+                                Image(systemName: "long.text.page.and.pencil")
+                            } else {
+                                Image(systemName: "square.and.pencil")
+                            }
                             Text("profile.edit_as_text")
                         }
                     }
@@ -138,7 +188,11 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         showImportPicker = true
                     } label: {
                         HStack(spacing: 12) {
-                            Image(systemName: "arrow.down.document")
+                            if #available(iOS 18.0, *) {
+                                Image(systemName: "arrow.down.document")
+                            } else {
+                                Image(systemName: "square.and.arrow.down")
+                            }
                             Text("profile.import_config")
                         }
                     }
@@ -163,7 +217,7 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                 .buttonStyle(.borderedProminent)
             }
             .alert("add_new_network", isPresented: $showNewNetworkAlert) {
-                TextField("network_name", text: $newNetworkInput)
+                TextField("config_name", text: $newNetworkInput)
                     .textInputAutocapitalization(.never)
                 if #available(iOS 26.0, *) {
                     Button(role: .cancel) {}
@@ -173,13 +227,21 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     Button("network.create", action: createProfile)
                 }
             }
+            .alert("edit_config_name", isPresented: $showEditConfigNameAlert) {
+                TextField("config_name", text: $editConfigNameInput)
+                    .textInputAutocapitalization(.never)
+                Button("common.cancel") {}
+                Button("save") {
+                    commitConfigNameEdit()
+                }
+            }
         }
     }
 
     var body: some View {
         NavigationStack {
             mainView
-                .navigationTitle(selectedProfile?.name ?? String(localized: "select_network"))
+                .navigationTitle(selectedSession.session?.name ?? String(localized: "select_network"))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("select_network", systemImage: "chevron.up.chevron.down") {
@@ -191,13 +253,13 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     Button {
                         guard !isPending else { return }
                         isLocalPending = true
-                        Task {
+                        Task { @MainActor in
                             if isConnected {
                                 await manager.disconnect()
-                            } else if let selectedProfile {
+                            } else if let session = selectedSession.session {
                                 do {
-                                    let options = try NEManager.generateOptions(selectedProfile)
-                                    NEManager.saveOptions(options)
+                                    let options = try NetworkExtensionManager.generateOptions(session.document.profile)
+                                    NetworkExtensionManager.saveOptions(options)
                                     try await manager.connect()
                                 } catch {
                                     dashboardLogger.error("connect failed: \(error)")
@@ -208,13 +270,13 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                         }
                     } label: {
                         Label(
-                            isConnected ? "stop_network" : "run_network",
+                            isConnected ? "vpn_disconnect" : "vpn_connect",
                             systemImage: isConnected ? "cable.connector.slash" : "cable.connector"
                         )
                         .labelStyle(.titleAndIcon)
                         .padding(10)
                     }
-                    .disabled(selectedProfileId == nil || manager.isLoading || isPending)
+                    .disabled((selectedSession.session == nil && !isConnected) || manager.isLoading || isPending)
                     .buttonStyle(.plain)
                     .foregroundStyle(isConnected ? Color.red : Color.accentColor)
                     .animation(.interactiveSpring, value: [isConnected, isPending])
@@ -222,16 +284,19 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             }
         }
         .onAppear {
-            if selectedProfileId == nil {
-                selectedProfileId = networks.first {
-                    $0.id.uuidString == lastSelected
-                }?.id
-            }
-            Task {
+            Task { @MainActor in
                 try? await manager.load()
+                if selectedSession.session == nil,
+                   let lastSelected {
+                    await loadProfile(lastSelected)
+                    if let session = selectedSession.session,
+                       let options = try? NetworkExtensionManager.generateOptions(session.document.profile) {
+                        NetworkExtensionManager.saveOptions(options)
+                    }
+                }
             }
             // Register Darwin notification observer for tunnel errors
-            darwinObserver = DNObserver(name: "site.yinmo.easytier.tunnel.error") {
+            darwinObserver = DarwinNotificationObserver(name: "\(APP_BUNDLE_ID).error") {
                 // Read the latest error from shared App Group defaults
                 let defaults = UserDefaults(suiteName: APP_GROUP_ID)
                 if let msg = defaults?.string(forKey: "TunnelLastError") {
@@ -241,25 +306,33 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                     }
                 }
             }
-            if let selectedProfile, let options = try? NEManager.generateOptions(selectedProfile) {
-                NEManager.saveOptions(options)
+        }
+        .onChange(of: scenePhase) { _ in
+            Task { @MainActor in
+                await saveProfile()
             }
         }
-        .onChange(of: scenePhase) { _, _ in
-            saveOptions()
-        }
-        .onChange(of: selectedProfile) {
-            lastSelected = selectedProfile?.id.uuidString
-            guard let selectedProfile else { return }
-            Task {
-                await manager.updateName(name: selectedProfile.name, server: selectedProfile.id.uuidString)
+        .onChange(of: profilesUseICloud) { _ in
+            Task { @MainActor in
+                await closeSelectedSession(save: false)
             }
-            saveOptions()
+        }
+        .onChange(of: selectedSession.session) { session in
+            lastSelected = session?.name
         }
         .onDisappear {
             // Release observer to remove registration
             darwinObserver = nil
-            saveOptions()
+            Task { @MainActor in
+                await saveProfile()
+                await closeSelectedSession(save: false)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .profileDocumentConflictDetected)) { notification in
+            let configName = notification.userInfo?["configName"] as? String
+            Task { @MainActor in
+                handleConflict(configName: configName ?? selectedSession.session?.name)
+            }
         }
         .sheet(isPresented: $showManageSheet) {
             sheetView
@@ -292,7 +365,11 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
                 }
                 .fileImporter(
                     isPresented: $showImportPicker,
-                    allowedContentTypes: [UTType(filenameExtension: "toml") ?? .plainText],
+                    allowedContentTypes: [
+                        UTType(mimeType: "application/toml"),
+                        UTType(filenameExtension: "toml"),
+                        .plainText
+                    ].compactMap { $0 },
                     allowsMultipleSelection: false
                 ) { result in
                     switch result {
@@ -308,106 +385,284 @@ struct DashboardView<Manager: NEManagerProtocol>: View {
             dashboardLogger.error("received error: \(String(describing: msg))")
             return Alert(title: Text("common.error"), message: Text(msg.text))
         }
+        .alert("icloud_conflict_title", isPresented: $showConflictAlert) {
+            Button("icloud_conflict_use_local") {
+                resolveConflict(useLocal: true)
+            }
+            Button("icloud_conflict_use_remote") {
+                resolveConflict(useLocal: false)
+            }
+            Button("common.cancel", role: .cancel) {}
+        } message: {
+            if conflictDetails.isEmpty {
+                Text("icloud_conflict_message")
+            } else {
+                Text(conflictDetails)
+            }
+        }
     }
     
-    private func saveOptions() {
-        Task {
-            if let selectedProfile,
-               let options = try? NEManager.generateOptions(selectedProfile) {
-                NEManager.saveOptions(options)
+    @MainActor
+    private func loadProfile(_ named: String) async {
+        await closeSelectedSession()
+        do {
+            let session = try await ProfileStore.openSession(named: named)
+            selectedSession.session = session
+        } catch {
+            dashboardLogger.error("load profile failed: \(error)")
+            if let conflict = error as? ProfileStoreError,
+               case .conflict = conflict {
+                handleConflict(configName: named)
+            } else {
+                errorMessage = .init(error.localizedDescription)
+            }
+            selectedSession.session = nil
+        }
+    }
+    
+    @MainActor
+    private func saveProfile(saveOptions: Bool = true) async {
+        if saveOptions,
+           let session = selectedSession.session,
+           let options = try? NetworkExtensionManager.generateOptions(session.document.profile) {
+            NetworkExtensionManager.saveOptions(options)
+        }
+        if let session = selectedSession.session {
+            do {
+                try await session.save()
+            } catch {
+                dashboardLogger.error("save failed: \(error)")
+                if let conflict = error as? ProfileStoreError,
+                   case .conflict = conflict {
+                    handleConflict(configName: session.name)
+                } else {
+                    errorMessage = .init(error.localizedDescription)
+                }
             }
         }
     }
 
     private func importConfig(from url: URL) {
-        let scoped = url.startAccessingSecurityScopedResource()
-        defer {
-            if scoped {
-                url.stopAccessingSecurityScopedResource()
+        Task { @MainActor in
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer {
+                if scoped {
+                    url.stopAccessingSecurityScopedResource()
+                }
             }
-        }
-        do {
-            let toml = try String(contentsOf: url, encoding: .utf8)
-            let config = try TOMLDecoder().decode(NetworkConfig.self, from: toml)
-            let name = config.preferredName.isEmpty ? "easytier" : config.preferredName
-            let profile = ProfileSummary(name: name, context: context)
-            config.apply(to: profile.profile)
-            context.insert(profile)
-            selectedProfileId = profile.id
-        } catch {
-            dashboardLogger.error("import failed: \(error)")
-            errorMessage = .init(error.localizedDescription)
+            do {
+                let toml = try String(contentsOf: url, encoding: .utf8)
+                let config = try TOMLDecoder().decode(NetworkConfig.self, from: toml)
+                let rawName = url.deletingPathExtension().lastPathComponent
+                guard let configName = availableConfigName(rawName) else { return }
+                let profile = NetworkProfile(from: config)
+                try ProfileStore.save(profile, named: configName)
+                selectedSession.session = try await ProfileStore.openSession(named: configName)
+            } catch {
+                dashboardLogger.error("import failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
+            }
         }
     }
 
     private func exportSelectedProfile() {
-        guard let selectedProfile else {
+        guard let session = selectedSession.session else {
             errorMessage = .init("Please select a network.")
             return
         }
-        do {
-            let config = NetworkConfig(from: selectedProfile.profile, name: selectedProfile.name)
-            let encoded = try TOMLEncoder().encode(config).string ?? ""
-            let safeName = selectedProfile.name.isEmpty ? "easytier" : selectedProfile.name
-            let url = FileManager.default.temporaryDirectory
-                .appendingPathComponent("\(safeName).toml")
-            try encoded.write(to: url, atomically: true, encoding: .utf8)
-            dashboardLogger.info("exporting to: \(url)")
-            exportURL = .init(url)
-        } catch {
-            dashboardLogger.error("export failed: \(error)")
-            errorMessage = .init(error.localizedDescription)
+        let fileURL = try? ProfileStore.fileURL(forConfigName: session.name)
+        guard let fileURL,
+              FileManager.default.fileExists(atPath: fileURL.path) else {
+            errorMessage = .init("Config file not found.")
+            return
         }
+        dashboardLogger.info("exporting to: \(fileURL)")
+        exportURL = .init(fileURL)
     }
 
     private func presentEditInText() {
-        guard let selectedProfile else {
-            errorMessage = .init("Please select a network.")
-            return
-        }
-        do {
-            let config = NetworkConfig(from: selectedProfile.profile, name: selectedProfile.name)
-            editText = try TOMLEncoder().encode(config).string ?? ""
-            showEditSheet = true
-        } catch {
-            dashboardLogger.error("edit load failed: \(error)")
-            errorMessage = .init(error.localizedDescription)
+        Task { @MainActor in
+            guard let session = selectedSession.session else {
+                errorMessage = .init("Please select a network.")
+                return
+            }
+            do {
+                let config = session.document.profile.toConfig()
+                editText = try TOMLEncoder().encode(config).string ?? ""
+                showEditSheet = true
+            } catch {
+                dashboardLogger.error("edit load failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
+            }
         }
     }
 
     private func saveEditInText() {
-        guard let selectedProfile else {
-            errorMessage = .init("Please select a network.")
-            return
-        }
-        do {
-            let config = try TOMLDecoder().decode(NetworkConfig.self, from: editText)
-            config.apply(to: selectedProfile.profile)
-            let name = config.preferredName
-            if !name.isEmpty {
-                selectedProfile.name = name
+        Task { @MainActor in
+            do {
+                let config = try TOMLDecoder().decode(NetworkConfig.self, from: editText)
+                guard let session = selectedSession.session else {
+                    errorMessage = .init("Please select a network.")
+                    return
+                }
+                session.document.profile = NetworkProfile(from: config)
+                showEditSheet = false
+            } catch {
+                dashboardLogger.error("edit save failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
             }
-            showEditSheet = false
-        } catch {
-            dashboardLogger.error("edit save failed: \(error)")
-            errorMessage = .init(error.localizedDescription)
         }
     }
-}
 
-struct DashboardView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        DashboardView<MockNEManager>()
-        .modelContainer(
-            try! ModelContainer(
-                for: Schema([ProfileSummary.self, NetworkProfile.self]),
-                configurations: ModelConfiguration(
-                    isStoredInMemoryOnly: true
-                )
-            )
-        )
-        .environmentObject(manager)
+    private func commitConfigNameEdit() {
+        guard let name = selectedSession.session?.name,
+              let editingProfileName else { return }
+        let trimmed = editConfigNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty && trimmed != editingProfileName else { return }
+        guard let sanitizedName = validatedConfigName(trimmed) else { return }
+        Task { @MainActor in
+            do {
+                let renamingSelected = name == editingProfileName
+                if renamingSelected {
+                    await saveProfile()
+                    await closeSelectedSession(save: false)
+                }
+                try ProfileStore.renameProfileFile(from: name, to: sanitizedName)
+                if name == editingProfileName {
+                    await loadProfile(sanitizedName)
+                }
+            } catch {
+                dashboardLogger.error("rename failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
+            }
+        }
+    }
+
+    private func validatedConfigName(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = .init("Config name cannot be empty.")
+            return nil
+        }
+        let sanitized = ProfileStore.sanitizedFileName(trimmed, fallback: "")
+        guard sanitized == trimmed else {
+            errorMessage = .init("Config name contains invalid characters.")
+            return nil
+        }
+        let hasDuplicate = ProfileStore.loadIndexOrEmpty().enumerated().contains { item in
+            return item.element.caseInsensitiveCompare(sanitized) == .orderedSame
+        }
+        guard !hasDuplicate else {
+            errorMessage = .init("Config name already exists.")
+            return nil
+        }
+        return sanitized
+    }
+
+    private func availableConfigName(_ raw: String) -> String? {
+        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            errorMessage = .init("Config name cannot be empty.")
+            return nil
+        }
+        let sanitized = ProfileStore.sanitizedFileName(trimmed, fallback: "")
+        guard sanitized == trimmed else {
+            errorMessage = .init("Config name contains invalid characters.")
+            return nil
+        }
+        let existingNames = ProfileStore.loadIndexOrEmpty().enumerated().compactMap { item -> String? in
+            return item.element
+        }
+        if !existingNames.contains(where: { $0.caseInsensitiveCompare(sanitized) == .orderedSame }) {
+            return sanitized
+        }
+        var suffix = 2
+        while suffix < 10_000 {
+            let candidate = "\(sanitized) \(suffix)"
+            if !existingNames.contains(where: { $0.caseInsensitiveCompare(candidate) == .orderedSame }) {
+                return candidate
+            }
+            suffix += 1
+        }
+        errorMessage = .init("Config name already exists.")
+        return nil
+    }
+
+    @MainActor
+    private func closeSelectedSession(save: Bool = true) async {
+        dashboardLogger.info("closing session with save: \(save)")
+        if save {
+            await saveProfile()
+        }
+        if let session = selectedSession.session {
+            await session.close()
+        }
+        selectedSession.session = nil
+    }
+
+    private func resolveConflict(useLocal: Bool) {
+        Task { @MainActor in
+            guard let conflictConfigName else { return }
+            do {
+                await closeSelectedSession(save: false)
+                let url = try ProfileStore.fileURL(forConfigName: conflictConfigName)
+                if useLocal {
+                    try ProfileStore.resolveConflictUseLocal(at: url)
+                } else {
+                    try ProfileStore.resolveConflictUseRemote(at: url)
+                }
+                try await ProfileStore.waitForConflictResolved(at: url)
+                await loadProfile(conflictConfigName)
+            } catch {
+                dashboardLogger.error("resolve conflict failed: \(error)")
+                errorMessage = .init(error.localizedDescription)
+            }
+            self.conflictConfigName = nil
+            self.conflictDetails = ""
+        }
+    }
+
+    @MainActor
+    private func handleConflict(configName: String?) {
+        guard let configName else { return }
+        if showConflictAlert, conflictConfigName == configName {
+            return
+        }
+        conflictConfigName = configName
+        conflictDetails = conflictDetailsText(for: configName)
+        showConflictAlert = true
+    }
+
+    private func conflictDetailsText(for configName: String) -> String {
+        guard let url = try? ProfileStore.fileURL(forConfigName: configName) else {
+            return String(localized: "icloud_conflict_message")
+        }
+        let infos = ProfileStore.conflictInfos(at: url)
+        guard !infos.isEmpty else {
+            return String(localized: "icloud_conflict_message")
+        }
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .short
+        let lines = infos.map { info in
+            let label = String(localized: info.local ? "local" : "icloud")
+            let time = info.modificationDate.map { formatter.string(from: $0) } ?? "-"
+            let device = info.deviceName ?? UIDevice.current.name
+            return "\(label): \(device) · \(time)"
+        }
+        return ([String(localized: "icloud_conflict_message")] + lines).joined(separator: "\n")
+    }
+
+    final class SelectedSession: ObservableObject {
+        @Published var session: ProfileSession? {
+            didSet {
+                sessionCancellable = session?.objectWillChange.sink { [weak self] _ in
+                    self?.objectWillChange.send()
+                }
+            }
+        }
+
+        private var sessionCancellable: AnyCancellable?
     }
 }
 
@@ -418,3 +673,12 @@ struct IdentifiableURL: Identifiable {
         self.url = url
     }
 }
+
+
+#if DEBUG
+#Preview("Dashboard") {
+    let manager = MockNEManager()
+    DashboardView(manager: manager)
+        .environmentObject(manager)
+}
+#endif

@@ -2,25 +2,29 @@ import SwiftUI
 
 struct NetworkEditView: View {
     @Environment(\.horizontalSizeClass) var sizeClass
-    @Binding var name: String
     @Binding var profile: NetworkProfile
     @State var showProxyCIDREditor = false
     @State var editingProxyCIDR: NetworkProfile.ProxyCIDR?
     @State var selectedPane: EditPane?
 
-    enum EditPane: Hashable {
+    enum EditPane: Identifiable, Hashable {
+        var id: Self { self }
         case advanced
+        case dns
+        case route
         case portForwards
     }
     
     var body: some View {
-        AdaptiveNav(primaryColumn, secondaryColumn, showNav: $selectedPane)
+        AdaptiveNavigation(primaryColumn, secondaryColumn, showNav: $selectedPane)
     }
     
     var primaryColumn: some View {
         List(selection: $selectedPane) {
             basicSettings
             NavigationLink("advanced_settings", value: EditPane.advanced)
+            NavigationLink("dns_settings", value: EditPane.dns)
+            NavigationLink("route_settings", value: EditPane.route)
             NavigationLink("port_forwards", value: EditPane.portForwards)
         }
         .scrollDismissesKeyboard(.immediately)
@@ -31,6 +35,10 @@ struct NetworkEditView: View {
             switch selectedPane {
             case .advanced:
                 advancedSettings
+            case .dns:
+                dnsSettings
+            case .route:
+                routeSettings
             case .portForwards:
                 portForwardsSettings
             case nil:
@@ -61,10 +69,10 @@ struct NetworkEditView: View {
 
             Section("network") {
                 LabeledContent("network_name") {
-                    TextField("easytier", text: $name)
+                    TextField("easytier", text: $profile.networkName)
                         .multilineTextAlignment(.trailing)
                 }
-
+                
                 LabeledContent("network_secret") {
                     SecureField(
                         "common_text.empty",
@@ -72,7 +80,14 @@ struct NetworkEditView: View {
                     )
                     .multilineTextAlignment(.trailing)
                 }
+                
+                LabeledContent("hostname") {
+                    TextField("common_text.default", text: $profile.hostname)
+                        .multilineTextAlignment(.trailing)
+                }
+            }
 
+            Section("peer") {
                 Picker(
                     "networking_method",
                     selection: $profile.networkingMethod
@@ -82,18 +97,18 @@ struct NetworkEditView: View {
                         Text(method.description).tag(method)
                     }
                 }
-                .pickerStyle(.palette)
+                .pickerStyle(.segmented)
 
                 switch profile.networkingMethod {
-                case .publicServer:
-                    LabeledContent("status.server") {
-                        Text(profile.publicServerURL)
+                case .defaultServer:
+                    LabeledContent("server") {
+                        Text(defaultServerURL)
                             .multilineTextAlignment(.trailing)
                     }
-                case .manual:
+                case .custom:
                     ListEditor(newItemTitle: "common_text.add_peer", items: $profile.peerURLs, addItemFactory: { "" }, rowContent: {
                         TextField("example.peer_url", text: $0.text)
-                            .fontDesign(.monospaced)
+                            .font(.body.monospaced())
                     })
                 case .standalone:
                     EmptyView()
@@ -104,50 +119,29 @@ struct NetworkEditView: View {
 
     var advancedSettings: some View {
         Form {
-            Section("general") {
-                LabeledContent("hostname") {
-                    TextField("common_text.default", text: $profile.hostname.bound)
-                        .multilineTextAlignment(.trailing)
-                }
-
-//                LabeledContent("Device Name") {
-//                    TextField("Default", text: $profile.devName)
-//                        .multilineTextAlignment(.trailing)
-//                }
-
+            Section {
                 LabeledContent("mtu") {
                     TextField(
                         "common_text.default",
-                        value: $profile.mtu,
-                        formatter: NumberFormatter()
+                        text: Binding(
+                            get: { $profile.mtu.wrappedValue.map(String.init) ?? "" },
+                            set: { newValue in
+                                if newValue.isEmpty {
+                                    $profile.mtu.wrappedValue = nil
+                                } else {
+                                    $profile.mtu.wrappedValue = Int(newValue)
+                                }
+                            }
+                        )
                     )
                     .multilineTextAlignment(.trailing)
                     .keyboardType(.numberPad)
                 }
-            }
-            
-            Section {
-                Toggle(
-                    "common_text.enable",
-                    isOn: $profile.enableOverrideDNS
-                )
-                if profile.enableOverrideDNS {
-                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
-                        HStack {
-                            Text("address")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            IPv4Field(ip: dns.text)
-                        }
-                    })
-                }
             } header: {
-                Text("override_dns")
+                Text("general")
             } footer: {
-                Text("override_dns_help")
+                Text("mtu_help")
             }
-            
-            proxyCIDRsSettings
             
             Section("vpn_portal_config") {
                 Toggle(
@@ -173,7 +167,7 @@ struct NetworkEditView: View {
             Section("listener_urls") {
                 ListEditor(newItemTitle: "common_text.add_listener_url", items: $profile.listenerURLs, addItemFactory: { "" }, rowContent: {
                     TextField("example.listener_url", text: $0.text)
-                        .fontDesign(.monospaced)
+                        .font(.body.monospaced())
                 })
             }
             
@@ -182,31 +176,13 @@ struct NetworkEditView: View {
                 if profile.enableRelayNetworkWhitelist {
                     ListEditor(newItemTitle: "common_text.add_network", items: $profile.relayNetworkWhitelist, addItemFactory: { "" }, rowContent: {
                         TextField("example.network_name", text: $0.text)
-                            .fontDesign(.monospaced)
+                            .font(.body.monospaced())
                     })
                 }
             } header: {
                 Text("relay_network_whitelist")
             } footer: {
                 Text("relay_network_whitelist_help")
-            }
-            
-            Section {
-                Toggle("common_text.enable", isOn: $profile.enableManualRoutes)
-                if profile.enableManualRoutes {
-                    ListEditor(newItemTitle: "common_text.add_route", items: $profile.routes, addItemFactory: NetworkProfile.CIDR.init, rowContent: { cidr in
-                        HStack {
-                            Text("cidr")
-                                .foregroundStyle(.secondary)
-                            Spacer()
-                            IPv4Field(ip: cidr.ip, length: cidr.length)
-                        }
-                    })
-                }
-            } header: {
-                Text("manual_routes")
-            } footer: {
-                Text("manual_routes_help")
             }
             
             Section("socks5") {
@@ -228,24 +204,9 @@ struct NetworkEditView: View {
             }
             
             Section {
-                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: { ip in
-                    HStack {
-                        Text("address")
-                            .foregroundStyle(.secondary)
-                        Spacer()
-                        IPv4Field(ip: ip.text)
-                    }
-                })
-            } header: {
-                Text("exit_nodes")
-            } footer: {
-                Text("exit_nodes_help")
-            }
-            
-            Section {
                 ListEditor(newItemTitle: "common_text.add_map_listener", items: $profile.mappedListeners, addItemFactory: { "" }, rowContent: {
                     TextField("example.mapped_listener_url", text: $0.text)
-                        .fontDesign(.monospaced)
+                        .font(.body.monospaced())
                 })
             } header: {
                 Text("mapped_listeners")
@@ -270,6 +231,94 @@ struct NetworkEditView: View {
             }
         }
         .navigationTitle("advanced_settings")
+        .scrollDismissesKeyboard(.immediately)
+    }
+    
+    var dnsSettings: some View {
+        Form {
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableMagicDNS
+                )
+                if profile.enableMagicDNS {
+                    LabeledContent("tld_dns_zone") {
+                        TextField(
+                            "example.tld_dns_zone",
+                            text: $profile.magicDNSTLD
+                        )
+                        .multilineTextAlignment(.trailing)
+                    }
+                }
+            } header: {
+                Text("magic_dns")
+            } footer: {
+                Text("magic_dns_help")
+            }
+            
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: $profile.enableOverrideDNS
+                )
+                if profile.enableOverrideDNS {
+                    ListEditor(newItemTitle: "common_text.add_dns", items: $profile.overrideDNS, addItemFactory: { "" }, rowContent: { dns in
+                        HStack {
+                            Text("address")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: dns.text)
+                        }
+                    })
+                }
+            } header: {
+                Text("override_dns")
+            } footer: {
+                Text("override_dns_help")
+            }
+        }
+        .navigationTitle("dns_settings")
+        .scrollDismissesKeyboard(.immediately)
+    }
+    
+    var routeSettings: some View {
+        Form {
+            proxyCIDRsSettings
+            
+            Section {
+                ListEditor(newItemTitle: "common_text.add_exit_node", items: $profile.exitNodes, addItemFactory: { "" }, rowContent: { ip in
+                    HStack {
+                        Text("address")
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        IPv4Field(ip: ip.text)
+                    }
+                })
+            } header: {
+                Text("exit_nodes")
+            } footer: {
+                Text("exit_nodes_help")
+            }
+            
+            Section {
+                Toggle("common_text.enable", isOn: $profile.enableManualRoutes)
+                if profile.enableManualRoutes {
+                    ListEditor(newItemTitle: "common_text.add_route", items: $profile.routes, addItemFactory: NetworkProfile.CIDR.init, rowContent: { cidr in
+                        HStack {
+                            Text("cidr")
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            IPv4Field(ip: cidr.ip, length: cidr.length)
+                        }
+                    })
+                }
+            } header: {
+                Text("manual_routes")
+            } footer: {
+                Text("manual_routes_help")
+            }
+        }
+        .navigationTitle("route_settings")
         .scrollDismissesKeyboard(.immediately)
         .sheet(isPresented: $showProxyCIDREditor) {
             proxyCIDREditor
@@ -329,26 +378,24 @@ struct NetworkEditView: View {
     
     var proxyCIDRsSettings: some View {
         Section("common_text.proxy_cidr") {
-            ListEditor(newItemTitle: "common_text.add_proxy_cidr", items: $profile.proxyCIDRs, addItemFactory: {
-                NetworkProfile.ProxyCIDR(cidr: "0.0.0.0", enableMapping: false, mappedCIDR: "0.0.0.0", length: "0")
-            }, rowContent: { proxyCIDR in
+            ListEditor(newItemTitle: "common_text.add_proxy_cidr", items: $profile.proxyCIDRs, addItemFactory: NetworkProfile.ProxyCIDR.init, rowContent: { proxyCIDR in
                 HStack(spacing: 12) {
                     if proxyCIDR.enableMapping.wrappedValue {
                         Text("map")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(proxyCIDR.cidr.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
-                            .fontDesign(.monospaced)
+                        Text(proxyCIDR.wrappedValue.cidrString)
+                            .font(.body.monospaced())
                         Image(systemName: "arrow.right")
                             .foregroundStyle(.secondary)
-                        Text("\(proxyCIDR.mappedCIDR.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
-                            .fontDesign(.monospaced)
+                        Text(proxyCIDR.wrappedValue.mappedCIDRString)
+                            .font(.body.monospaced())
                     } else {
                         Text("proxy")
                             .foregroundStyle(.secondary)
                         Spacer()
-                        Text("\(proxyCIDR.cidr.wrappedValue)/\(proxyCIDR.length.wrappedValue)")
-                            .fontDesign(.monospaced)
+                        Text(proxyCIDR.wrappedValue.cidrString)
+                            .font(.body.monospaced())
                     }
                 }
                 .contentShape(Rectangle())
@@ -400,31 +447,12 @@ struct NetworkEditView: View {
     }
 }
 
-extension Optional where Wrapped == String {
-    fileprivate var bound: String {
-        get { self ?? "" }
-        set { self = newValue.isEmpty ? nil : newValue }
+#if DEBUG
+@available(iOS 17.0, *)
+#Preview("Network Edit Portrait") {
+    @Previewable @State var profile = NetworkProfile()
+    NavigationStack {
+        NetworkEditView(profile: $profile)
     }
 }
-
-extension Optional where Wrapped == Int {
-    fileprivate var bound: Int {
-        get { self ?? 0 }
-        set { self = newValue }
-    }
-}
-
-struct NetworkConfigurationView_Previews: PreviewProvider {
-    static var previews: some View {
-        @State var profile = NetworkProfile(id: UUID())
-        @State var name = ""
-        NavigationStack {
-            NetworkEditView(name: $name, profile: $profile)
-        }
-        
-        NavigationStack {
-            NetworkEditView(name: $name, profile: $profile)
-        }
-        .previewInterfaceOrientation(.landscapeLeft)
-    }
-}
+#endif

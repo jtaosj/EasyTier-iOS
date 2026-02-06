@@ -1,50 +1,54 @@
 import AppIntents
-import SwiftData
 import NetworkExtension
 import SwiftUI
 
-// MARK: - App Entity
-
+@available(iOS 18.0, *)
 struct NetworkProfileEntity: AppEntity {
     static var typeDisplayRepresentation: TypeDisplayRepresentation = "easytier_network"
     static var defaultQuery = NetworkProfileQuery()
 
-    var id: UUID
+    var id: String
     var name: String
 
     var displayRepresentation: DisplayRepresentation {
         DisplayRepresentation(title: "\(name)")
     }
 
-    init(id: UUID, name: String) {
+    init(id: String, name: String) {
         self.id = id
         self.name = name
     }
 
-    init(from profile: ProfileSummary) {
-        self.id = profile.id
-        self.name = profile.name
+    init(from profile: NetworkProfile) {
+        self.id = profile.networkName
+        self.name = profile.networkName
     }
 }
 
+@available(iOS 18.0, *)
 struct NetworkProfileQuery: EntityQuery {
-    func entities(for identifiers: [UUID]) async throws -> [NetworkProfileEntity] {
-        let modelContext = ModelContext(try ModelContainer(for: ProfileSummary.self, NetworkProfile.self))
-        let descriptor = FetchDescriptor<ProfileSummary>(predicate: #Predicate { identifiers.contains($0.id) })
-        let profiles = try modelContext.fetch(descriptor)
-        return profiles.map { NetworkProfileEntity(from: $0) }
+    func entities(for identifiers: [String]) async throws -> [NetworkProfileEntity] {
+        return await MainActor.run {
+            let profiles = ProfileStore.loadIndexOrEmpty()
+            return profiles
+                .filter { identifiers.contains($0) }
+                .map {
+                    return NetworkProfileEntity(id: $0, name: $0)
+                }
+        }
     }
 
     func suggestedEntities() async throws -> [NetworkProfileEntity] {
-        let modelContext = ModelContext(try ModelContainer(for: ProfileSummary.self, NetworkProfile.self))
-        let descriptor = FetchDescriptor<ProfileSummary>(sortBy: [SortDescriptor(\.createdAt)])
-        let profiles = try modelContext.fetch(descriptor)
-        return profiles.map { NetworkProfileEntity(from: $0) }
+        return await MainActor.run {
+            let profiles = ProfileStore.loadIndexOrEmpty()
+            return profiles.map {
+                return NetworkProfileEntity(id: $0, name: $0)
+            }
+        }
     }
 }
 
-// MARK: - Helpers
-
+@available(iOS 18.0, *)
 enum IntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
     case noProfileFound
     case connectionFailed(String)
@@ -59,6 +63,7 @@ enum IntentError: Swift.Error, CustomLocalizedStringResourceConvertible {
     }
 }
 
+@available(iOS 18.0, *)
 struct ConnectIntent: AppIntent {
     static var title: LocalizedStringResource = "connect_easytier"
     static var description: IntentDescription = IntentDescription("connect_to_easytier_network")
@@ -69,13 +74,14 @@ struct ConnectIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let manager = NEManager()
+        let manager = NetworkExtensionManager()
         try await manager.load()
         try await manager.connect()
         return .result()
     }
 }
 
+@available(iOS 18.0, *)
 struct DisconnectIntent: AppIntent {
     static var title: LocalizedStringResource = "disconnect_easytier"
     static var description: IntentDescription = IntentDescription("disconnect_from_easytier_network")
@@ -83,13 +89,14 @@ struct DisconnectIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let manager = NEManager()
+        let manager = NetworkExtensionManager()
         try await manager.load()
         await manager.disconnect()
         return .result()
     }
 }
 
+@available(iOS 18.0, *)
 struct ToggleConnectIntent: AppIntent {
     static var title: LocalizedStringResource = "toggle_easytier"
     static var description: IntentDescription = IntentDescription("toggle_easytier_network_connection")
@@ -100,7 +107,7 @@ struct ToggleConnectIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        let manager = NEManager()
+        let manager = NetworkExtensionManager()
         try await manager.load()
 
         // Check current status
@@ -121,8 +128,7 @@ struct ToggleConnectIntent: AppIntent {
     }
 }
 
-// MARK: - Shortcuts Provider
-
+@available(iOS 18.0, *)
 struct EasyTierShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

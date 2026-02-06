@@ -2,12 +2,13 @@ import Foundation
 import Combine
 import NetworkExtension
 import WidgetKit
+import UIKit
+import os
 
 import EasyTierShared
 import TOMLKit
-import os
 
-protocol NEManagerProtocol: ObservableObject {
+protocol NetworkExtensionManagerProtocol: ObservableObject {
     var status: NEVPNStatus { get }
     var connectedDate: Date? { get }
     var isLoading: Bool { get }
@@ -18,19 +19,15 @@ protocol NEManagerProtocol: ObservableObject {
     func connect() async throws
     func disconnect() async
     func fetchRunningInfo(_ callback: @escaping ((NetworkStatus) -> Void))
+    func fetchLastNetworkSettings(_ callback: @escaping ((TunnelNetworkSettingsSnapshot?) -> Void))
     func updateName(name: String, server: String) async
     func exportExtensionLogs() async throws -> URL
     @MainActor
     func setAlwaysOnEnabled(_ enabled: Bool) async throws
 }
 
-class NEManager: NEManagerProtocol {
-    private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "App", category: "NEManager")
-
-    private enum ProviderCommand: String {
-        case exportOSLog = "export_oslog"
-        case runningInfo = "running_info"
-    }
+class NetworkExtensionManager: NetworkExtensionManagerProtocol {
+    private static let logger = Logger(subsystem: APP_BUNDLE_ID, category: "NEManager")
 
     private struct ProviderMessageResponse: Codable {
         let ok: Bool
@@ -97,8 +94,9 @@ class NEManager: NEManagerProtocol {
     // Notify Control Widget to refresh its state
     private func syncWidgetState() {
         if #available(iOS 18.0, *) {
-            ControlCenter.shared.reloadControls(ofKind: "site.yinmo.easytier.controlwidgets")
+            ControlCenter.shared.reloadControls(ofKind: "\(APP_BUNDLE_ID).control")
         }
+        WidgetCenter.shared.reloadTimelines(ofKind: "\(APP_BUNDLE_ID).widget")
     }
     
     private func reset() {
@@ -128,8 +126,8 @@ class NEManager: NEManagerProtocol {
         let manager = NETunnelProviderManager()
         manager.localizedDescription = "EasyTier"
         let tunnelProtocol = NETunnelProviderProtocol()
-        tunnelProtocol.providerBundleIdentifier = "site.yinmo.easytier.tunnel"
-        tunnelProtocol.serverAddress = "127.0.0.1"
+        tunnelProtocol.providerBundleIdentifier = "\(APP_BUNDLE_ID).tunnel"
+        tunnelProtocol.serverAddress = "localhost"
         manager.protocolConfiguration = tunnelProtocol
         manager.isEnabled = true
         do {
@@ -161,18 +159,20 @@ class NEManager: NEManagerProtocol {
         }
     }
     
-    static func generateOptions(_ profile: ProfileSummary) throws -> EasyTierOptions {
+    static func generateOptions(_ profile: NetworkProfile) throws -> EasyTierOptions {
         var options = EasyTierOptions()
-        let config = NetworkConfig(from: profile.profile, name: profile.name)
+        var config = profile.toConfig()
+        if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {
+            config.hostname = UIDevice.current.name
+        }
 
         let encoded: String
         do {
             encoded = try TOMLEncoder().encode(config).string ?? ""
         } catch {
-            Self.logger.error("connect() generate config failed: \(String(describing: error))")
+            Self.logger.error("generateOptions() generate config failed: \(String(describing: error))")
             throw error
         }
-        Self.logger.debug("connect() config: \(encoded)")
         options.config = encoded
         if let ipv4 = config.ipv4 {
             options.ipv4 = ipv4
@@ -182,6 +182,8 @@ class NEManager: NEManagerProtocol {
         }
         if let mtu = config.flags?.mtu {
             options.mtu = mtu
+        } else {
+            options.mtu = config.flags?.enableEncryption ?? true ? 1360 : 1380
         }
         if let routes = config.routes {
             options.routes = routes
@@ -190,12 +192,11 @@ class NEManager: NEManagerProtocol {
            let logLevel = LogLevel.init(rawValue: logLevel) {
             options.logLevel = logLevel
         }
-        if profile.profile.enableMagicDNS {
+        if profile.enableMagicDNS {
             options.magicDNS = true
         }
-        
-        if profile.profile.enableOverrideDNS {
-            options.dns = profile.profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
+        if profile.enableOverrideDNS {
+            options.dns = profile.overrideDNS.compactMap { $0.text.isEmpty ? nil : $0.text }
         }
         
         return options
@@ -221,7 +222,7 @@ class NEManager: NEManagerProtocol {
             return
         }
         if status == .invalid {
-            _ = try await NEManager.install()
+            _ = try await NetworkExtensionManager.install()
             try await load()
         }
         guard let manager else {
@@ -280,6 +281,37 @@ class NEManager: NEManagerProtocol {
         }
     }
 
+    func fetchLastNetworkSettings(_ callback: @escaping ((TunnelNetworkSettingsSnapshot?) -> Void)) {
+        guard let manager else {
+            callback(nil)
+            return
+        }
+        guard let session = manager.connection as? NETunnelProviderSession,
+              session.status != .invalid else {
+            callback(nil)
+            return
+        }
+        do {
+            let message = ProviderCommand.lastNetworkSettings.rawValue.data(using: .utf8) ?? Data()
+            try session.sendProviderMessage(message) { data in
+                guard let data else {
+                    callback(nil)
+                    return
+                }
+                do {
+                    let settings = try JSONDecoder().decode(TunnelNetworkSettingsSnapshot.self, from: data)
+                    callback(settings)
+                } catch {
+                    Self.logger.error("fetchLastNetworkSettings() json deserialize failed: \(String(describing: error))")
+                    callback(nil)
+                }
+            }
+        } catch {
+            Self.logger.error("fetchLastNetworkSettings() failed: \(String(describing: error))")
+            callback(nil)
+        }
+    }
+
     func exportExtensionLogs() async throws -> URL {
         guard let manager,
               let session = manager.connection as? NETunnelProviderSession,
@@ -316,7 +348,7 @@ class NEManager: NEManagerProtocol {
     @MainActor
     func setAlwaysOnEnabled(_ enabled: Bool) async throws {
         if status == .invalid || manager == nil {
-            _ = try await NEManager.install()
+            _ = try await NetworkExtensionManager.install()
             try await load()
         }
         guard let manager else {
@@ -336,7 +368,7 @@ class NEManager: NEManagerProtocol {
     }
 }
 
-class MockNEManager: NEManagerProtocol {
+class MockNEManager: NetworkExtensionManagerProtocol {
     @Published var status: NEVPNStatus = .disconnected
     @Published var connectedDate: Date? = nil
     @Published var isLoading: Bool = true
@@ -344,7 +376,7 @@ class MockNEManager: NEManagerProtocol {
 
     // Simulate a successful load
     func load() async throws {
-        try await Task.sleep(nanoseconds: 1_000_000_000) // 1 second delay
+        try await Task.sleep(nanoseconds: 500_000_000)
         isLoading = false
         status = .disconnected
     }
@@ -353,14 +385,14 @@ class MockNEManager: NEManagerProtocol {
     func connect() async throws {
         status = .connecting
         // Simulate network delay
-        try await Task.sleep(nanoseconds: 2_000_000_000)
+        try await Task.sleep(nanoseconds: 500_000_000)
         status = .connected
         connectedDate = Date()
     }
 
     func disconnect() async {
         status = .disconnecting
-        try? await Task.sleep(nanoseconds: 1_000_000_000)
+        try? await Task.sleep(nanoseconds: 500_000_000)
         status = .disconnected
         connectedDate = nil
     }
@@ -371,8 +403,12 @@ class MockNEManager: NEManagerProtocol {
         callback(MockNEManager.dummyRunningInfo)
     }
 
+    func fetchLastNetworkSettings(_ callback: @escaping ((TunnelNetworkSettingsSnapshot?) -> Void)) {
+        callback(nil)
+    }
+
     func exportExtensionLogs() async throws -> URL {
-        throw NEManager.NEManagerError.providerUnavailable
+        throw NetworkExtensionManager.NEManagerError.providerUnavailable
     }
 
     @MainActor
@@ -383,7 +419,7 @@ class MockNEManager: NEManagerProtocol {
     static var dummyRunningInfo: NetworkStatus {
         let id = UUID().uuidString
 
-        let myNodeInfo = NetworkStatus.NodeInfo(
+        let myNodeInfo = NetworkStatus.MyNodeInfo(
             virtualIPv4: NetworkStatus.IPv4CIDR(address: NetworkStatus.IPv4Addr("10.144.144.10")!, networkLength: 24),
             hostname: "My iPhone",
             version: "0.10.1",
@@ -395,7 +431,8 @@ class MockNEManager: NEManagerProtocol {
             ),
             stunInfo: NetworkStatus.STUNInfo(udpNATType: .symmetricEasyInc, tcpNATType: .fullCone, lastUpdateTime: Date().timeIntervalSince1970 - 10),
             listeners: [NetworkStatus.Url(url: "tcp://0.0.0.0:11010"), NetworkStatus.Url(url: "udp://0.0.0.0:11010")],
-            vpnPortalCfg: "[Interface]\nPrivateKey = [REDACTED]\nAddress = 10.144.144.1/24\nListenPort = 22022\n\n[Peer]\nPublicKey = [REDACTED]\nAllowedIPs = 10.144.144.2/32"
+            vpnPortalCfg: "[Interface]\nPrivateKey = [REDACTED]\nAddress = 10.144.144.1/24\nListenPort = 22022\n\n[Peer]\nPublicKey = [REDACTED]\nAllowedIPs = 10.144.144.2/32",
+            peerID: 114514,
         )
         
         let peerRoute1 = NetworkStatus.Route(peerId: 123, ipv4Addr: .init(address: .init("10.144.144.10")!, networkLength: 24), nextHopPeerId: 123, cost: 1, pathLatency: 8, proxyCIDRs: [], hostname: "peer-1-ubuntu", stunInfo: NetworkStatus.STUNInfo(udpNATType: .fullCone, tcpNATType: .symmetric, lastUpdateTime: Date().timeIntervalSince1970 - 20), instId: id, version: "0.10.0")

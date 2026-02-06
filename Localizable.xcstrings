@@ -19,18 +19,20 @@
     "%@ ms" : {
       "shouldTranslate" : false
     },
-    "%@/%@" : {
+    "%@/%lld" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "%1$@/%2$@"
+            "value" : "%1$@/%2$lld"
           }
         }
-      },
-      "shouldTranslate" : false
+      }
     },
     "0" : {
+      "shouldTranslate" : false
+    },
+    "0.0.0.0" : {
       "shouldTranslate" : false
     },
     "1.0" : {
@@ -44,13 +46,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Homepage"
+            "value" : "Github Repository"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "主页"
+            "value" : "Github 仓库"
           }
         }
       }
@@ -60,13 +62,29 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "License"
+            "value" : "Open Source License"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "许可证"
+            "value" : "开放源代码协议"
+          }
+        }
+      }
+    },
+    "about.privacy_policy" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Privacy Policy"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "隐私政策"
           }
         }
       }
@@ -145,7 +163,7 @@
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
+            "state" : "translated",
             "value" : "高级路由设置，修改本设置有可能造成无网络连接、系统服务无法使用等问题。在未完全知晓选项行为时不建议修改。[参考文档](https://developer.apple.com/documentation/networkextension/routing-your-vpn-network-traffic#Exclude-some-traffic-from-a-personal-VPN-or-packet-tunnel-provider)"
           }
         }
@@ -163,6 +181,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "高级设置"
+          }
+        }
+      }
+    },
+    "all_domains" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Domains"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部域名"
           }
         }
       }
@@ -370,7 +404,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加节点"
+            "value" : "添加对等节点"
           }
         }
       }
@@ -402,7 +436,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加代理网段"
+            "value" : "添加子网代理"
           }
         }
       }
@@ -450,7 +484,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "编辑代理网段"
+            "value" : "编辑子网代理"
           }
         }
       }
@@ -498,7 +532,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "映射网段"
+            "value" : "子网映射"
           }
         }
       }
@@ -514,7 +548,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "代理网段"
+            "value" : "子网代理"
           }
         }
       }
@@ -563,6 +597,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "信息"
+          }
+        }
+      }
+    },
+    "config_name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Config Name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置名称"
           }
         }
       }
@@ -682,6 +732,22 @@
         }
       }
     },
+    "custom" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Custom"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自定义"
+          }
+        }
+      }
+    },
     "default_conn_id" : {
       "localizations" : {
         "en" : {
@@ -694,6 +760,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "默认连接 ID"
+          }
+        }
+      }
+    },
+    "default_server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default Server"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "默认服务器"
           }
         }
       }
@@ -719,13 +801,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Device Management"
+            "value" : "Management"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设备管理"
+            "value" : "管理"
           }
         }
       }
@@ -799,13 +881,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Disable encryption for peers communication, default is false, must be same with peers"
+            "value" : "Disable encryption for peers communication, default is false, must be same with peers."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "禁用对等节点通信的加密，默认为 false，必须与对等节点相同"
+            "value" : "禁用对等节点通信的加密，默认为 false，必须与对等节点相同。"
           }
         }
       }
@@ -965,7 +1047,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "禁用对称 NAT 的打洞（生日攻击），将对称 NAT 视为锥形 NAT 处理"
+            "value" : "禁用对称 NAT 的打洞（生日攻击），将对称 NAT 视为锥形 NAT 处理。"
           }
         }
       }
@@ -991,13 +1073,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Disable udp hole punching"
+            "value" : "Disable udp hole punching."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "禁用 UDP 打洞功能"
+            "value" : "禁用 UDP 打洞功能。"
           }
         }
       }
@@ -1030,6 +1112,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "从 EasyTier 网络断开"
+          }
+        }
+      }
+    },
+    "dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS"
+          }
+        }
+      }
+    },
+    "dns_settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "DNS 设置"
           }
         }
       }
@@ -1091,6 +1205,54 @@
         }
       }
     },
+    "edit_config_name" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Config Name"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "编辑配置名称"
+          }
+        }
+      }
+    },
+    "enable_data_compression" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable Data Compression"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "启用数据压缩"
+          }
+        }
+      }
+    },
+    "enable_data_compression_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use zstd to compress traffic."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 zstd 压缩流量。"
+          }
+        }
+      }
+    },
     "enable_exit_node" : {
       "localizations" : {
         "en" : {
@@ -1112,13 +1274,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Allow this node to be an exit node"
+            "value" : "Allow this node to be an exit node."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "允许此节点成为出口节点"
+            "value" : "允许此节点成为出口节点。"
           }
         }
       }
@@ -1151,38 +1313,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "将 TCP 流量转为 KCP 流量，降低传输延迟，提升传输速度。"
-          }
-        }
-      }
-    },
-    "enable_magic_dns" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable Magic DNS"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "启用魔法 DNS"
-          }
-        }
-      }
-    },
-    "enable_magic_dns_help" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enable magic dns, all nodes in the network can access each other by domain name, e.g.: node1.et.net."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "启用魔法 DNS，允许通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。"
           }
         }
       }
@@ -1352,7 +1482,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "e.g. 1080"
+            "value" : "e.g.: 1080"
           }
         },
         "zh-Hans" : {
@@ -1363,12 +1493,28 @@
         }
       }
     },
+    "example.tld_dns_zone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "e.g.: et.net."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如：et.net."
+          }
+        }
+      }
+    },
     "example.vpn_portal_listen_port" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "e.g. 22022"
+            "value" : "e.g.: 22022"
           }
         },
         "zh-Hans" : {
@@ -1464,13 +1610,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exit nodes to forward all traffic to, a virtual ipv4 address, priority is determined by the order of the list"
+            "value" : "Exit nodes to forward all traffic to, a virtual ipv4 address, priority is determined by the order of the list."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转发所有流量的出口节点，虚拟 IPv4 地址，优先级由列表顺序决定"
+            "value" : "转发所有流量的出口节点，虚拟 IPv4 地址，优先级由列表顺序决定。"
           }
         }
       }
@@ -1622,6 +1768,87 @@
         }
       }
     },
+    "icloud" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud"
+          }
+        }
+      }
+    },
+    "icloud_conflict_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose which version to keep."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请选择要保留的版本。"
+          }
+        }
+      }
+    },
+    "icloud_conflict_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud Conflict"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iCloud 冲突"
+          }
+        }
+      }
+    },
+    "icloud_conflict_use_local" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use This Device"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用本地版本"
+          }
+        }
+      }
+    },
+    "icloud_conflict_use_remote" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use iCloud Version"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 iCloud 版本"
+          }
+        }
+      }
+    },
     "include_all_networks" : {
       "localizations" : {
         "en" : {
@@ -1702,6 +1929,22 @@
         }
       }
     },
+    "ipv4" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4"
+          }
+        }
+      }
+    },
     "ipv4_addr" : {
       "localizations" : {
         "en" : {
@@ -1718,6 +1961,54 @@
         }
       }
     },
+    "ipv4_routes_excluded" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4 Excluded Routes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4 排除路由"
+          }
+        }
+      }
+    },
+    "ipv4_routes_included" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4 Included Routes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv4 包含路由"
+          }
+        }
+      }
+    },
+    "ipv6" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6"
+          }
+        }
+      }
+    },
     "ipv6_addr" : {
       "localizations" : {
         "en" : {
@@ -1730,6 +2021,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "IPv6 地址"
+          }
+        }
+      }
+    },
+    "ipv6_routes_excluded" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6 Excluded Routes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6 排除路由"
+          }
+        }
+      }
+    },
+    "ipv6_routes_included" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6 Included Routes"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "IPv6 包含路由"
           }
         }
       }
@@ -1771,13 +2094,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ignore hop count and select the path with the lowest total latency"
+            "value" : "Ignore hop count and select the path with the lowest total latency."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "忽略中转跳数，选择总延迟最低的路径"
+            "value" : "忽略中转跳数，选择总延迟最低的路径。"
           }
         }
       }
@@ -1842,6 +2165,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "加载中"
+          }
+        }
+      }
+    },
+    "local" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地"
           }
         }
       }
@@ -1942,6 +2281,38 @@
         }
       }
     },
+    "magic_dns" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Magic DNS"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "魔法 DNS"
+          }
+        }
+      }
+    },
+    "magic_dns_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "With magic DNS, all nodes in the network can access each other by domain name, e.g.: node1.et.net."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利用魔法 DNS，可以通过 EasyTier 的 DNS 服务器访问其他节点的虚拟 IPv4 地址，例如：node1.et.net。"
+          }
+        }
+      }
+    },
     "main.dashboard" : {
       "localizations" : {
         "en" : {
@@ -1954,22 +2325,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "仪表盘"
-          }
-        }
-      }
-    },
-    "manual" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Manual"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "手动"
           }
         }
       }
@@ -1995,13 +2350,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Assign routes cidr manually, will disable subnet proxy and wireguard routes propagated from peers. e.g.:192.168.0.0/16\n"
+            "value" : "Assign routes cidr manually, will disable subnet proxy and wireguard routes propagated from peers. e.g.:192.168.0.0/16.\n"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "手动分配路由 CIDR，将禁用子网代理和从对等节点传播的 wireguard 路由。例如：192.168.0.0/16"
+            "value" : "手动分配路由 CIDR，将禁用子网代理和从对等节点传播的 wireguard 路由。例如：192.168.0.0/16。"
           }
         }
       }
@@ -2054,6 +2409,22 @@
         }
       }
     },
+    "match_domains" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Match Domains"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匹配域名"
+          }
+        }
+      }
+    },
     "max_port" : {
       "localizations" : {
         "en" : {
@@ -2102,6 +2473,22 @@
         }
       }
     },
+    "mtu_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MTU of TUN device, default is 1380 when not encrypted, 1360 when encrypted."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TUN 设备的 MTU，默认非加密时为 1380，加密时为 1360。"
+          }
+        }
+      }
+    },
     "multi_thread" : {
       "localizations" : {
         "en" : {
@@ -2123,13 +2510,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use multi-thread runtime"
+            "value" : "Use multi-thread runtime."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用多线程运行时"
+            "value" : "使用多线程运行时。"
           }
         }
       }
@@ -2214,6 +2601,22 @@
         }
       }
     },
+    "network_settings" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network Settings"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络设置"
+          }
+        }
+      }
+    },
     "network.create" : {
       "localizations" : {
         "en" : {
@@ -2242,6 +2645,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "网络方式"
+          }
+        }
+      }
+    },
+    "new_network" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Network"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新网络"
           }
         }
       }
@@ -2290,6 +2709,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暂无连接详情。"
+          }
+        }
+      }
+    },
+    "no_ip_information_available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No IP information available"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无 IP 信息"
           }
         }
       }
@@ -2374,6 +2809,38 @@
         }
       }
     },
+    "no_peer_information_available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No peer information available"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无对等节点信息"
+          }
+        }
+      }
+    },
+    "no_settings_available" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No settings available"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无可用设置"
+          }
+        }
+      }
+    },
     "no_stun_information_available" : {
       "localizations" : {
         "en" : {
@@ -2417,7 +2884,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不使用 TUN 网卡，适合无管理员权限时使用。本节点仅允许被访问。访问其他节点需要使用 SOCK5"
+            "value" : "不使用 TUN 网卡，适合无管理员权限时使用。本节点仅允许被访问。访问其他节点需要使用 SOCK5。"
           }
         }
       }
@@ -2497,7 +2964,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "覆盖系统 DNS。如果也同时启用了魔法 DNS，需要手动添加。"
+            "value" : "覆盖系统 DNS。开启时如果也启用了魔法 DNS，需要手动添加。"
           }
         }
       }
@@ -2593,7 +3060,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点"
+            "value" : "对等节点"
           }
         }
       }
@@ -2609,7 +3076,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点详情"
+            "value" : "对等节点详情"
           }
         }
       }
@@ -2625,7 +3092,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点 ID"
+            "value" : "对等节点 ID"
           }
         }
       }
@@ -2641,7 +3108,23 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "节点信息"
+            "value" : "对等节点信息"
+          }
+        }
+      }
+    },
+    "plain_text_ip_input" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plain Text IP Input"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "纯文本 IP 输入"
           }
         }
       }
@@ -2817,7 +3300,7 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "代理网段"
+            "value" : "子网代理"
           }
         }
       }
@@ -2843,13 +3326,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Forward packet to proxy networks via system kernel, disable internal nat for network proxy"
+            "value" : "Forward packet to proxy networks via system kernel, disable internal nat for network proxy."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "通过系统内核转发子网代理数据包，禁用内置 NAT"
+            "value" : "通过系统内核转发子网代理数据包，禁用内置 NAT。"
           }
         }
       }
@@ -2902,22 +3385,6 @@
         }
       }
     },
-    "public_server" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Public Server"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "公共服务器"
-          }
-        }
-      }
-    },
     "relay_%lld" : {
       "localizations" : {
         "en" : {
@@ -2955,13 +3422,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Relay all peer rpc packets, even if the peer is not in the relay network whitelist.\nThis can help peers not in relay network whitelist to establish p2p connection.\n"
+            "value" : "Relay all peer rpc packets, even if the peer is not in the relay network whitelist.\nThis can help peers not in relay network whitelist to establish p2p connection."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "允许转发所有对等节点的 RPC 数据包，即使对等节点不在转发网络白名单中。\n这可以帮助白名单外网络中的对等节点建立 P2P 连接。\n"
+            "value" : "允许转发所有对等节点的 RPC 数据包，即使对等节点不在转发网络白名单中。\n这可以帮助白名单外网络中的对等节点建立 P2P 连接。"
           }
         }
       }
@@ -2987,13 +3454,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Only forward traffic from the whitelist networks, supporting wildcard strings, multiple network names can be separated by spaces.\nIf this parameter is empty, forwarding is disabled. By default, all networks are allowed.\ne.g.: '*' (all networks), 'def*' (networks with the prefix 'def'), 'net1 net2' (only allow net1 and net2)\n"
+            "value" : "Only forward traffic from the whitelist networks, supporting wildcard strings, multiple network names can be separated by spaces.\nIf this parameter is empty, forwarding is disabled. By default, all networks are allowed.\ne.g.: '\\*' (all networks), 'def\\*' (networks with the prefix 'def'), 'net1 net2' (only allow net1 and net2).\n"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "仅转发白名单网络的流量，支持通配符字符串。多个网络名称间可以使用英文空格间隔。\n如果该参数为空，则禁用转发。默认允许所有网络。\n例如：'*'（所有网络），'def*'（以def为前缀的网络），'net1 net2'（只允许net1和net2）\n"
+            "value" : "仅转发白名单网络的流量，支持通配符字符串。多个网络名称间可以使用英文空格间隔。\n如果该参数为空，则禁用转发。默认允许所有网络。\n例如：’\\*’（所有网络），’def\\*’（以def为前缀的网络），‘net1 net2’（只允许net1和net2）。\n"
           }
         }
       }
@@ -3010,6 +3477,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "远程地址"
+          }
+        }
+      }
+    },
+    "rename" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重命名"
           }
         }
       }
@@ -3046,18 +3529,18 @@
         }
       }
     },
-    "run_network" : {
+    "route_settings" : {
       "localizations" : {
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Run"
+            "value" : "Route Settings"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "启动"
+            "value" : "路由设置"
           }
         }
       }
@@ -3129,6 +3612,38 @@
         }
       }
     },
+    "save_to_icloud" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save Profiles to iCloud"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保存配置到 iCloud"
+          }
+        }
+      }
+    },
+    "search_domains" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search Domains"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索域名"
+          }
+        }
+      }
+    },
     "select_network" : {
       "localizations" : {
         "en" : {
@@ -3141,6 +3656,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "选择网络"
+          }
+        }
+      }
+    },
+    "server" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Server"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器"
           }
         }
       }
@@ -3205,38 +3736,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "状态刷新间隔"
-          }
-        }
-      }
-    },
-    "status.server" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Server"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "服务器"
-          }
-        }
-      }
-    },
-    "stop_network" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stop"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "停止"
           }
         }
       }
@@ -3365,6 +3864,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "TCP NAT 类型"
+          }
+        }
+      }
+    },
+    "tld_dns_zone" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TLD"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顶级域"
           }
         }
       }
@@ -3742,13 +4257,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "VPN Portal Config"
+            "value" : "WireGuard Portal"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "VPN 门户配置"
+            "value" : "WireGuard 门户"
           }
         }
       }
@@ -3765,6 +4280,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "监听端口"
+          }
+        }
+      }
+    },
+    "widget_desc" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Show and control EasyTier status."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "显示和控制 EasyTier 的状态。"
           }
         }
       }

@@ -43,6 +43,8 @@ struct NetworkStatus: Codable {
         var kcpInput: Bool
         var noRelayKcp: Bool
         var supportConnListSync: Bool
+        var quicInput: Bool
+        var noRelayQuic: Bool
 
         enum CodingKeys: String, CodingKey {
             case isPublicServer = "is_public_server"
@@ -50,6 +52,8 @@ struct NetworkStatus: Codable {
             case kcpInput = "kcp_input"
             case noRelayKcp = "no_relay_kcp"
             case supportConnListSync = "support_conn_list_sync"
+            case quicInput = "quic_input"
+            case noRelayQuic = "no_relay_quic"
         }
     }
 
@@ -152,7 +156,7 @@ struct NetworkStatus: Codable {
         var url: String
     }
 
-    struct NodeInfo: Codable {
+    struct MyNodeInfo: Codable {
         struct IPList: Codable {
             var publicIPv4: IPv4Addr?
             var interfaceIPv4s: [IPv4Addr]?
@@ -175,6 +179,7 @@ struct NetworkStatus: Codable {
         var stunInfo: STUNInfo?
         var listeners: [Url]? = nil
         var vpnPortalCfg: String?
+        var peerID: Int?
 
         enum CodingKeys: String, CodingKey {
             case virtualIPv4 = "virtual_ipv4"
@@ -183,6 +188,7 @@ struct NetworkStatus: Codable {
             case stunInfo = "stun_info"
             case listeners
             case vpnPortalCfg = "vpn_portal_cfg"
+            case peerID = "peer_id"
         }
     }
 
@@ -314,7 +320,7 @@ struct NetworkStatus: Codable {
     }
 
     var devName: String
-    var myNodeInfo: NodeInfo?
+    var myNodeInfo: MyNodeInfo?
     var events: [String]
     var routes: [Route]
     var peers: [PeerInfo]

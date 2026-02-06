@@ -18,7 +18,7 @@
 		05CF11DA2F1A589D00E6EDF1 /* libEasyTierShared.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 0526D8422F17D98E00968CE2 /* libEasyTierShared.a */; };
 		7A59B81B2F1641100069728D /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A59B81A2F1641100069728D /* WidgetKit.framework */; };
 		7A59B81D2F1641100069728D /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A59B81C2F1641100069728D /* SwiftUI.framework */; };
-		7A59B82E2F1641110069728D /* ControlWidgetsExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7A59B8192F1641100069728D /* ControlWidgetsExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		7A59B82E2F1641110069728D /* EasyTierWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 7A59B8192F1641100069728D /* EasyTierWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -68,7 +68,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				7A59B82E2F1641110069728D /* ControlWidgetsExtension.appex in Embed Foundation Extensions */,
+				7A59B82E2F1641110069728D /* EasyTierWidgetExtension.appex in Embed Foundation Extensions */,
 				055836392F04D26700139811 /* EasyTierNetworkExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
@@ -82,8 +82,10 @@
 		0526D8422F17D98E00968CE2 /* libEasyTierShared.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libEasyTierShared.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		0558362E2F04D26600139811 /* EasyTierNetworkExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EasyTierNetworkExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		055836302F04D26700139811 /* NetworkExtension.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = NetworkExtension.framework; path = System/Library/Frameworks/NetworkExtension.framework; sourceTree = SDKROOT; };
+		058E57A42F20AFD800BE84F9 /* lib.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = lib.rs; sourceTree = "<group>"; };
+		058EB1C12F20AFD800BE84F9 /* Cargo.toml */ = {isa = PBXFileReference; lastKnownFileType = text; path = Cargo.toml; sourceTree = "<group>"; };
 		05B61F5B2F05056D00646DDC /* libeasytier_ios.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libeasytier_ios.a; sourceTree = "<group>"; };
-		7A59B8192F1641100069728D /* ControlWidgetsExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ControlWidgetsExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		7A59B8192F1641100069728D /* EasyTierWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = EasyTierWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		7A59B81A2F1641100069728D /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		7A59B81C2F1641100069728D /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
@@ -103,12 +105,12 @@
 			);
 			target = 051C6A0A2F03AB0000AF29B1 /* EasyTier */;
 		};
-		7A59B8322F1641110069728D /* Exceptions for "ControlWidgets" folder in "ControlWidgetsExtension" target */ = {
+		7A59B8322F1641110069728D /* Exceptions for "EasyTierWidgetExtension" folder in "EasyTierWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 7A59B8182F1641100069728D /* ControlWidgetsExtension */;
+			target = 7A59B8182F1641100069728D /* EasyTierWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -134,12 +136,12 @@
 			path = EasyTierNetworkExtension;
 			sourceTree = "<group>";
 		};
-		7A59B81E2F1641100069728D /* ControlWidgets */ = {
+		7A59B81E2F1641100069728D /* EasyTierWidgetExtension */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				7A59B8322F1641110069728D /* Exceptions for "ControlWidgets" folder in "ControlWidgetsExtension" target */,
+				7A59B8322F1641110069728D /* Exceptions for "EasyTierWidgetExtension" folder in "EasyTierWidgetExtension" target */,
 			);
-			path = ControlWidgets;
+			path = EasyTierWidgetExtension;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -187,12 +189,13 @@
 		051C6A022F03AB0000AF29B1 = {
 			isa = PBXGroup;
 			children = (
+				058EB1C22F20AFD800BE84F9 /* Core */,
 				051C6A0D2F03AB0000AF29B1 /* EasyTier */,
-				0526D8432F17D98E00968CE2 /* EasyTierShared */,
 				055836322F04D26700139811 /* EasyTierNetworkExtension */,
-				7A59B81E2F1641100069728D /* ControlWidgets */,
-				0526D7822F1762C300968CE2 /* Localizable.xcstrings */,
+				7A59B81E2F1641100069728D /* EasyTierWidgetExtension */,
+				0526D8432F17D98E00968CE2 /* EasyTierShared */,
 				0558362F2F04D26700139811 /* Frameworks */,
+				0526D7822F1762C300968CE2 /* Localizable.xcstrings */,
 				051C6A0C2F03AB0000AF29B1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -202,7 +205,7 @@
 			children = (
 				051C6A0B2F03AB0000AF29B1 /* EasyTier.app */,
 				0558362E2F04D26600139811 /* EasyTierNetworkExtension.appex */,
-				7A59B8192F1641100069728D /* ControlWidgetsExtension.appex */,
+				7A59B8192F1641100069728D /* EasyTierWidgetExtension.appex */,
 				0526D8422F17D98E00968CE2 /* libEasyTierShared.a */,
 			);
 			name = Products;
@@ -217,6 +220,23 @@
 				7A59B81C2F1641100069728D /* SwiftUI.framework */,
 			);
 			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		058E57A52F20AFD800BE84F9 /* src */ = {
+			isa = PBXGroup;
+			children = (
+				058E57A42F20AFD800BE84F9 /* lib.rs */,
+			);
+			path = src;
+			sourceTree = "<group>";
+		};
+		058EB1C22F20AFD800BE84F9 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				058E57A52F20AFD800BE84F9 /* src */,
+				058EB1C12F20AFD800BE84F9 /* Cargo.toml */,
+			);
+			path = Core;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -294,9 +314,9 @@
 			productReference = 0558362E2F04D26600139811 /* EasyTierNetworkExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		7A59B8182F1641100069728D /* ControlWidgetsExtension */ = {
+		7A59B8182F1641100069728D /* EasyTierWidgetExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 7A59B8312F1641110069728D /* Build configuration list for PBXNativeTarget "ControlWidgetsExtension" */;
+			buildConfigurationList = 7A59B8312F1641110069728D /* Build configuration list for PBXNativeTarget "EasyTierWidgetExtension" */;
 			buildPhases = (
 				7A59B8152F1641100069728D /* Sources */,
 				7A59B8162F1641100069728D /* Frameworks */,
@@ -308,13 +328,13 @@
 				05CF11DC2F1A589D00E6EDF1 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				7A59B81E2F1641100069728D /* ControlWidgets */,
+				7A59B81E2F1641100069728D /* EasyTierWidgetExtension */,
 			);
-			name = ControlWidgetsExtension;
+			name = EasyTierWidgetExtension;
 			packageProductDependencies = (
 			);
 			productName = ControlWidgetsExtension;
-			productReference = 7A59B8192F1641100069728D /* ControlWidgetsExtension.appex */;
+			productReference = 7A59B8192F1641100069728D /* EasyTierWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
@@ -360,7 +380,7 @@
 			targets = (
 				051C6A0A2F03AB0000AF29B1 /* EasyTier */,
 				0558362D2F04D26600139811 /* EasyTierNetworkExtension */,
-				7A59B8182F1641100069728D /* ControlWidgetsExtension */,
+				7A59B8182F1641100069728D /* EasyTierWidgetExtension */,
 				0526D8412F17D98E00968CE2 /* EasyTierShared */,
 			);
 		};
@@ -463,7 +483,7 @@
 		};
 		7A59B82D2F1641110069728D /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 7A59B8182F1641100069728D /* ControlWidgetsExtension */;
+			target = 7A59B8182F1641100069728D /* EasyTierWidgetExtension */;
 			targetProxy = 7A59B82C2F1641110069728D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -593,7 +613,7 @@
 				CODE_SIGN_ENTITLEMENTS = EasyTier/EasyTier.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -614,7 +634,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -647,7 +667,7 @@
 				CODE_SIGN_ENTITLEMENTS = EasyTier/EasyTier.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -668,7 +688,7 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.2;
@@ -698,7 +718,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Y8RH943F65;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -715,7 +735,7 @@
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = Y8RH943F65;
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -734,7 +754,7 @@
 				CODE_SIGN_ENTITLEMENTS = EasyTierNetworkExtension/EasyTierNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -742,7 +762,7 @@
 				INFOPLIST_FILE = EasyTierNetworkExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EasyTierNetworkExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -786,7 +806,7 @@
 				CODE_SIGN_ENTITLEMENTS = EasyTierNetworkExtension/EasyTierNetworkExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -794,7 +814,7 @@
 				INFOPLIST_FILE = EasyTierNetworkExtension/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = EasyTierNetworkExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -838,24 +858,25 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = ControlWidgets/ControlWidgetsExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = EasyTierWidgetExtension/EasyTierWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ControlWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = EasyTierControlWidgets;
+				INFOPLIST_FILE = EasyTierWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EasyTierWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = site.yinmo.easytier.controlwidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = site.yinmo.easytier.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -872,24 +893,25 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
-				CODE_SIGN_ENTITLEMENTS = ControlWidgets/ControlWidgetsExtension.entitlements;
+				CODE_SIGN_ENTITLEMENTS = EasyTierWidgetExtension/EasyTierWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 14;
+				CURRENT_PROJECT_VERSION = 36;
 				DEVELOPMENT_TEAM = Y8RH943F65;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = ControlWidgets/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = EasyTierControlWidgets;
+				INFOPLIST_FILE = EasyTierWidgetExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = EasyTierWidgetExtension;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = site.yinmo.easytier.controlwidgets;
+				PRODUCT_BUNDLE_IDENTIFIER = site.yinmo.easytier.widgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SDKROOT = iphoneos;
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -941,7 +963,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7A59B8312F1641110069728D /* Build configuration list for PBXNativeTarget "ControlWidgetsExtension" */ = {
+		7A59B8312F1641110069728D /* Build configuration list for PBXNativeTarget "EasyTierWidgetExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				7A59B82F2F1641110069728D /* Debug */,

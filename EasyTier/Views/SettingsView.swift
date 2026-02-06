@@ -4,12 +4,13 @@ import EasyTierShared
 
 let defaults = UserDefaults(suiteName: APP_GROUP_ID)
 
-struct SettingsView<Manager: NEManagerProtocol>: View {
-    
-    @EnvironmentObject var manager: Manager
+struct SettingsView<Manager: NetworkExtensionManagerProtocol>: View {
+    @ObservedObject var manager: Manager
     @AppStorage("logLevel") var logLevel: LogLevel = .info
     @AppStorage("statusRefreshInterval") var statusRefreshInterval: Double = 1.0
     @AppStorage("useRealDeviceNameAsDefault") var useRealDeviceNameAsDefault: Bool = true
+    @AppStorage("plainTextIPInput") var plainTextIPInput: Bool = false
+    @AppStorage("profilesUseICloud") var profilesUseICloud: Bool = false
     @AppStorage("includeAllNetworks", store: defaults) var includeAllNetworks: Bool = false
     @AppStorage("excludeLocalNetworks", store: defaults) var excludeLocalNetworks: Bool = false
     @AppStorage("excludeCellularServices", store: defaults) var excludeCellularServices: Bool = true
@@ -22,8 +23,13 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
     @State private var settingsErrorMessage: TextItem?
     @State private var isExporting = false
     @State private var isAlwaysOnUpdating = false
+    
+    init(manager: Manager) {
+        _manager = ObservedObject(wrappedValue: manager)
+    }
 
-    enum SettingsPane: Hashable {
+    enum SettingsPane: Identifiable, Hashable {
+        var id: Self { self }
         case license
     }
 
@@ -35,7 +41,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
 
     var body: some View {
         NavigationStack {
-            AdaptiveNav(primaryColumn, secondaryColumn, showNav: $selectedPane)
+            AdaptiveNavigation(primaryColumn, secondaryColumn, showNav: $selectedPane)
                 .navigationTitle("settings")
                 .navigationBarTitleDisplayMode(.inline)
                 .scrollDismissesKeyboard(.immediately)
@@ -59,9 +65,11 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
                     }
                 }
                 Toggle("use_device_name", isOn: $useRealDeviceNameAsDefault)
+                Toggle("plain_text_ip_input", isOn: $plainTextIPInput)
+                Toggle("save_to_icloud", isOn: $profilesUseICloud)
                 Toggle("always_on", isOn: $manager.isAlwaysOnEnabled)
                     .disabled(manager.isLoading || isAlwaysOnUpdating)
-                    .onChange(of: manager.isAlwaysOnEnabled) { _, newValue in
+                    .onChange(of: manager.isAlwaysOnEnabled) { newValue in
                         updateAlwaysOn(newValue)
                     }
             }
@@ -103,6 +111,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
             } footer: {
                 Text("advanced_help")
             }
+            .disabled(manager.status != .disconnected)
 
             Section("about.title") {
                 LabeledContent("app") {
@@ -112,6 +121,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
                     Text(appVersion)
                 }
                 Link("about.homepage", destination: URL(string: "https://github.com/EasyTier/EasyTier-iOS")!)
+                Link("about.privacy_policy", destination: URL(string: "https://easytier.cn/guide/privacy.html")!)
                 
                 NavigationLink("about.license", value: SettingsPane.license)
             }
@@ -156,8 +166,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
             
             You should have received a copy of the GNU General Public License along with this program. If not, see <http://www.gnu.org/licenses/>.
             """)
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .font(.caption.monospaced())
             }
             Section("EasyTier") {
                 Text("""
@@ -226,8 +235,7 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
 
             If the Library as you received it specifies that a proxy can decide whether future versions of the GNU Lesser General Public License shall apply, that proxy's public statement of acceptance of any version is permanent authorization for you to choose that version for the Library.
             """)
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .font(.caption.monospaced())
             }
         }
         .navigationTitle("about.license")
@@ -273,13 +281,10 @@ struct SettingsView<Manager: NEManagerProtocol>: View {
     }
 }
 
-struct SettingsView_Previews: PreviewProvider {
-    static var previews: some View {
-        @StateObject var manager = MockNEManager()
-        SettingsView<MockNEManager>()
-            .environmentObject(manager)
-        SettingsView<MockNEManager>()
-            .previewInterfaceOrientation(.landscapeLeft)
-            .environmentObject(manager)
-    }
+#if DEBUG
+#Preview("Settings Portrait") {
+    let manager = MockNEManager()
+    SettingsView(manager: manager)
+        .environmentObject(manager)
 }
+#endif
