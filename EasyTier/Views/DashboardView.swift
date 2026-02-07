@@ -16,6 +16,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     @AppStorage("selectedProfileName", store: UserDefaults(suiteName: APP_GROUP_ID)) var lastSelected: String?
     @AppStorage("profilesUseICloud") var profilesUseICloud: Bool = false
     
+    @State var currentProfile = NetworkProfile()
     @State var isLocalPending = false
 
     @State var showManageSheet = false
@@ -59,18 +60,10 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     var mainView: some View {
         Group {
             if selectedSession.session != nil {
-                let profile = Binding(
-                    get: { selectedSession.session?.document.profile ?? NetworkProfile() },
-                    set: { newValue in
-                        guard selectedSession.session?.document.profile != newValue else { return }
-                        selectedSession.session?.document.profile = newValue
-                        selectedSession.objectWillChange.send()
-                    }
-                )
                 if isConnected {
-                    StatusView(profile.wrappedValue.networkName, manager: manager)
+                    StatusView(currentProfile.networkName, manager: manager)
                 } else {
-                    NetworkEditView(profile: profile)
+                    NetworkEditView(profile: $currentProfile)
                         .disabled(isPending)
                 }
             } else {
@@ -257,9 +250,9 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                         Task { @MainActor in
                             if isConnected {
                                 await manager.disconnect()
-                            } else if let session = selectedSession.session {
+                            } else {
                                 do {
-                                    let options = try NetworkExtensionManager.generateOptions(session.document.profile)
+                                    let options = try NetworkExtensionManager.generateOptions(currentProfile)
                                     NetworkExtensionManager.saveOptions(options)
                                     try await manager.connect()
                                 } catch {
@@ -290,8 +283,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 if selectedSession.session == nil,
                    let lastSelected {
                     await loadProfile(lastSelected)
-                    if let session = selectedSession.session,
-                       let options = try? NetworkExtensionManager.generateOptions(session.document.profile) {
+                    if let options = try? NetworkExtensionManager.generateOptions(currentProfile) {
                         NetworkExtensionManager.saveOptions(options)
                     }
                 }
@@ -320,6 +312,9 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         }
         .onChange(of: selectedSession.session) { session in
             lastSelected = session?.name
+        }
+        .onChange(of: currentProfile) { profile in
+            selectedSession.session?.document.profile = profile
         }
         .onDisappear {
             // Release observer to remove registration
@@ -408,6 +403,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         do {
             let session = try await ProfileStore.openSession(named: named)
             selectedSession.session = session
+            currentProfile = session.document.profile
         } catch {
             dashboardLogger.error("load profile failed: \(error)")
             if let conflict = error as? ProfileStoreError,
@@ -645,7 +641,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .short
         let lines = infos.map { info in
-            let label = String(localized: info.local ? "local" : "icloud")
+            let label = info.local ? String(localized: "local") : String(localized: "icloud")
             let time = info.modificationDate.map { formatter.string(from: $0) } ?? "-"
             let device = info.deviceName ?? UIDevice.current.name
             return "\(label): \(device) · \(time)"
