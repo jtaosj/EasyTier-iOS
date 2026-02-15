@@ -1044,7 +1044,7 @@ dependencies = [
 [[package]]
 name = "easytier"
 version = "2.5.0"
-source = "git+https://github.com/EasyTier/EasyTier.git?branch=main#85e902957784ffbffba99abaf8df4d029a7b0b7c"
+source = "git+https://github.com/EasyTier/EasyTier.git?branch=main#fe4e77979de6cdc6eb5fad254a4188eefaa821e4"
 dependencies = [
  "anyhow",
  "arc-swap",
@@ -1185,7 +1185,7 @@ dependencies = [
 [[package]]
 name = "easytier-rpc-build"
 version = "0.1.0"
-source = "git+https://github.com/EasyTier/EasyTier.git?branch=main#85e902957784ffbffba99abaf8df4d029a7b0b7c"
+source = "git+https://github.com/EasyTier/EasyTier.git?branch=main#fe4e77979de6cdc6eb5fad254a4188eefaa821e4"
 dependencies = [
  "heck 0.5.0",
  "prost-build",
