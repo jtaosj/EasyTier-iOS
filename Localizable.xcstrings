@@ -2742,6 +2742,12 @@
             "state" : "translated",
             "value" : "Need P2P"
           }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要 P2P"
+          }
         }
       }
     },
