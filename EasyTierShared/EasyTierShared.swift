@@ -137,6 +137,7 @@ public struct TunnelNetworkSettingsSnapshot: Codable, Equatable {
 }
 
 public enum ProviderCommand: String, Codable, CaseIterable {
+    case clearLog = "clear_log"
     case exportOSLog = "export_oslog"
     case runningInfo = "running_info"
     case lastNetworkSettings = "last_network_settings"

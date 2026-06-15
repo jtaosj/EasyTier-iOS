@@ -38,7 +38,7 @@ struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
             case .dashboard:
                 DashboardView(manager: manager, selectedSession: selectedSession)
             case .log:
-                LogView()
+                LogView(manager: manager)
             case .settings:
                 SettingsView(manager: manager)
             case .none:
@@ -63,7 +63,7 @@ struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
                         Image(systemName: "list.bullet.below.rectangle")
                         Text("main.dashboard")
                     }
-                LogView()
+                LogView(manager: manager)
                     .tabItem {
                         Image(systemName: "rectangle.and.text.magnifyingglass")
                         Text("logging")
