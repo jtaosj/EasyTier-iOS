@@ -221,6 +221,19 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
         if let raw = String(data: messageData, encoding: .utf8),
            let command = ProviderCommand(rawValue: raw) {
             switch command {
+            case .clearLog:
+                var errPtr: UnsafePointer<CChar>? = nil
+                if clear_logger(&errPtr) == 0 {
+                    let response = ProviderMessageResponse(ok: true, path: nil, error: nil)
+                    let data = try? JSONEncoder().encode(response)
+                    completionHandler(data)
+                } else {
+                    let err = extractRustString(errPtr) ?? "Unknown"
+                    logger.error("handleAppMessage() clear logger failed: \(err, privacy: .public)")
+                    let response = ProviderMessageResponse(ok: false, path: nil, error: err)
+                    let data = try? JSONEncoder().encode(response)
+                    completionHandler(data)
+                }
             case .exportOSLog:
                 do {
                     let url = try OSLogExporter.exportToAppGroup(appGroupID: APP_GROUP_ID)

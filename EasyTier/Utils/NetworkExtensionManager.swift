@@ -25,6 +25,7 @@ protocol NetworkExtensionManagerProtocol: ObservableObject {
     func fetchRunningInfo(_ callback: @escaping ((NetworkStatus) -> Void))
     func fetchLastNetworkSettings(_ callback: @escaping ((TunnelNetworkSettingsSnapshot?) -> Void))
     func updateName(name: String, server: String) async
+    func clearCoreLog() async throws
     func exportExtensionLogs() async throws -> URL
     @MainActor
     func setAlwaysOnEnabled(_ enabled: Bool) async throws
@@ -42,6 +43,7 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
     enum NEManagerError: LocalizedError {
         case providerUnavailable
         case invalidResponse
+        case clearFailed(String)
         case exportFailed(String)
 
         var errorDescription: String? {
@@ -50,6 +52,8 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
                 return "provider unavailable"
             case .invalidResponse:
                 return "invalid response"
+            case .clearFailed(let message):
+                return message
             case .exportFailed(let message):
                 return message
             }
@@ -364,6 +368,39 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
         }
     }
 
+    func clearCoreLog() async throws {
+        guard let manager,
+              let session = manager.connection as? NETunnelProviderSession,
+              session.status == .connected else {
+            throw NEManagerError.providerUnavailable
+        }
+        guard let message = ProviderCommand.clearLog.rawValue.data(using: .utf8) else {
+            throw NEManagerError.invalidResponse
+        }
+        return try await withCheckedThrowingContinuation { continuation in
+            do {
+                try session.sendProviderMessage(message) { data in
+                    guard let data else {
+                        continuation.resume(throwing: NEManagerError.invalidResponse)
+                        return
+                    }
+                    do {
+                        let response = try JSONDecoder().decode(ProviderMessageResponse.self, from: data)
+                        if response.ok {
+                            continuation.resume()
+                        } else {
+                            continuation.resume(throwing: NEManagerError.clearFailed(response.error ?? "clear failed"))
+                        }
+                    } catch {
+                        continuation.resume(throwing: error)
+                    }
+                }
+            } catch {
+                continuation.resume(throwing: error)
+            }
+        }
+    }
+
     @MainActor
     func setAlwaysOnEnabled(_ enabled: Bool) async throws {
         if status == .invalid || manager == nil {
@@ -417,6 +454,8 @@ class MockNEManager: NetworkExtensionManagerProtocol {
     }
 
     func updateName(name: String, server: String) async { }
+
+    func clearCoreLog() async throws { }
 
     func fetchRunningInfo(_ callback: @escaping ((NetworkStatus) -> Void)) {
         callback(MockNEManager.dummyRunningInfo)
