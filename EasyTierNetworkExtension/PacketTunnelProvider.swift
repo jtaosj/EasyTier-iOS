@@ -154,6 +154,9 @@ class PacketTunnelProvider: NEPacketTunnelProvider {
             if needSetTunFd {
                 let tunFd = self.packetFlow.value(forKeyPath: "socket.fileDescriptor") as? Int32 ?? tunnelFileDescriptor()
                 if let tunFd {
+                    let dupFd = dup(tunFd)
+                    logger.info("handleRunningInfoChanged() found fd: \(tunFd, privacy: .public), dup to: \(dupFd, privacy: .public)")
+                    let _ = setNonBlocking(fd: dupFd)
                     var errPtr: UnsafePointer<CChar>? = nil
                     let ret = set_tun_fd(tunFd, &errPtr)
                     guard ret == 0 else {
