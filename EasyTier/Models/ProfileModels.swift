@@ -38,6 +38,7 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
         var enableMapping: Bool = false
         var mappedCIDR: String = ""
         var length: String = ""
+        var allow: [String]? = nil
         
         var cidrString: String {
             if cidr.isEmpty || length.isEmpty {
@@ -105,6 +106,8 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
     
     var portForwards: [PortForwardSetting] = []
 
+    var acl: ACLConfig? = nil
+
     var exitNodes: [TextItem] = []
 
     var enableSocks5: Bool = false
@@ -136,7 +139,7 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
         if let hostname = config.hostname, !hostname.isEmpty {
             profile.hostname = hostname
         }
-        profile.networkName = config.networkIdentity?.networkName ?? ""
+        profile.networkName = config.networkIdentity?.networkName ?? config.instanceName
         profile.networkSecret = config.networkIdentity?.networkSecret ?? ""
 
         if let dhcp = config.dhcp {
@@ -167,7 +170,8 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
                     cidr: parsed.ip,
                     enableMapping: false,
                     mappedCIDR: "",
-                    length: parsed.length
+                    length: parsed.length,
+                    allow: item.allow
                 )
                 if let mappedCIDR = item.mappedCIDR, !mappedCIDR.isEmpty {
                     let mapped = NetworkConfig.splitCIDR(mappedCIDR, defaultLength: parsed.length)
@@ -195,6 +199,8 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
                 )
             }
         }
+
+        profile.acl = config.acl
 
         if let vpnPortalConfig = config.vpnPortalConfig {
             profile.enableVPNPortal = true

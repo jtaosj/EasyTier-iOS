@@ -9,7 +9,7 @@ struct NetworkEditView: View {
 
     enum EditPane: Identifiable, Hashable {
         var id: Self { self }
-        case advanced, dns, route, portForwards
+        case advanced, dns, route, portForwards, acl
     }
     
     var body: some View {
@@ -24,6 +24,7 @@ struct NetworkEditView: View {
             NavigationLink("dns_settings", value: EditPane.dns)
             NavigationLink("route_settings", value: EditPane.route)
             NavigationLink("port_forwards", value: EditPane.portForwards)
+            NavigationLink("acl.title", value: EditPane.acl)
         }
         .scrollDismissesKeyboard(.immediately)
 #else
@@ -33,6 +34,7 @@ struct NetworkEditView: View {
             NavigationLink("dns_settings") { dnsSettings }
             NavigationLink("route_settings") { routeSettings }
             NavigationLink("port_forwards") { portForwardsSettings }
+            NavigationLink("acl.title") { ACLSettingsView(acl: $profile.acl) }
         }
         .formStyle(.grouped)
 #endif
@@ -49,6 +51,8 @@ struct NetworkEditView: View {
                 routeSettings
             case .portForwards:
                 portForwardsSettings
+            case .acl:
+                ACLSettingsView(acl: $profile.acl)
             case nil:
                 ZStack {
 #if os(iOS)
