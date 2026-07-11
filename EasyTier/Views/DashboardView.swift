@@ -15,7 +15,6 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     @ObservedObject var selectedSession: SelectedProfileSession
     
     @AppStorage("selectedProfileName", store: UserDefaults(suiteName: APP_GROUP_ID)) var lastSelected: String?
-    @AppStorage("profilesUseICloud") var profilesUseICloud: Bool = false
     
     @State var currentProfile = NetworkProfile()
     @State var isLocalPending = false
@@ -338,8 +337,9 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         .onAppear {
             Task { @MainActor in
                 try? await manager.load()
-                if !hasSelectedProfile,
-                   let lastSelected {
+                if let session = selectedSession.session {
+                    currentProfile = session.document.profile
+                } else if let lastSelected {
                     await loadProfile(lastSelected)
                     if let options = try? NetworkExtensionManager.generateOptions(currentProfile) {
                         NetworkExtensionManager.saveOptions(options)
@@ -366,13 +366,9 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 await saveProfile()
             }
         }
-        .onChange(of: profilesUseICloud) { _ in
-            Task { @MainActor in
-                _ = await closeSelectedSession()
-            }
-        }
         .onChange(of: selectedSession.session) { session in
             lastSelected = session?.name
+            currentProfile = session?.document.profile ?? NetworkProfile()
         }
         .onChange(of: currentProfile) { profile in
             guard let session = selectedSession.session,

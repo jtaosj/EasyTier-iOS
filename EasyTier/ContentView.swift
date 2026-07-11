@@ -40,7 +40,7 @@ struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
             case .log:
                 LogView(manager: manager)
             case .settings:
-                SettingsView(manager: manager)
+                SettingsView(manager: manager, selectedSession: selectedSession)
             case .none:
                 ZStack {
 #if os(iOS)
@@ -68,7 +68,7 @@ struct ContentView<Manager: NetworkExtensionManagerProtocol>: View {
                         Image(systemName: "rectangle.and.text.magnifyingglass")
                         Text("logging")
                     }
-                SettingsView(manager: manager)
+                SettingsView(manager: manager, selectedSession: selectedSession)
                     .tabItem {
                         Image(systemName: "gearshape")
                             .environment(\.symbolVariants, .none)

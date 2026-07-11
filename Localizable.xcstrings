@@ -16,6 +16,16 @@
     "%@" : {
       "shouldTranslate" : false
     },
+    "%@\n\n%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@\n\n%2$@"
+          }
+        }
+      }
+    },
     "%@ ms" : {
       "shouldTranslate" : false
     },
@@ -4413,6 +4423,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "端口受限"
+          }
+        }
+      }
+    },
+    "profile_storage_conflict_keep" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Existing"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留现有配置"
+          }
+        }
+      }
+    },
+    "profile_storage_conflict_message" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A profile with the same name already exists at the destination. Do you want to overwrite it?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目标位置已存在同名配置，是否覆盖？"
+          }
+        }
+      }
+    },
+    "profile_storage_conflict_overwrite" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overwrite"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "覆盖"
+          }
+        }
+      }
+    },
+    "profile_storage_conflict_title" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profile Already Exists"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "配置已存在"
           }
         }
       }
