@@ -178,6 +178,51 @@ struct NetworkEditView: View {
                 Text("mtu_help")
                 Text("instance_recv_bps_limit_help")
             }
+
+            Section {
+                Toggle(
+                    "common_text.enable",
+                    isOn: Binding(
+                        get: { profile.enableSecureMode },
+                        set: { enabled in
+                            profile.enableSecureMode = enabled
+                            if enabled {
+                                try? profile.prepareSecureModeKeys()
+                            }
+                        }
+                    )
+                )
+                if profile.enableSecureMode {
+                    LabeledContent("local_private_key") {
+                        SecureField(
+                            "common_text.empty",
+                            text: $profile.secureModeLocalPrivateKey,
+                            prompt: Text("common_text.empty")
+                        )
+                        .labelsHidden()
+                        .multilineTextAlignment(.trailing)
+                        .font(.body.monospaced())
+                        .adaptiveNoTextInputAutocapitalization()
+                        .autocorrectionDisabled()
+                    }
+                    LabeledContent("local_public_key") {
+                        TextField(
+                            "common_text.empty",
+                            text: $profile.secureModeLocalPublicKey,
+                            prompt: Text("common_text.empty")
+                        )
+                        .labelsHidden()
+                        .multilineTextAlignment(.trailing)
+                        .font(.body.monospaced())
+                        .adaptiveNoTextInputAutocapitalization()
+                        .autocorrectionDisabled()
+                    }
+                }
+            } header: {
+                Text("secure_mode")
+            } footer: {
+                Text("secure_mode_help")
+            }
             
             Section("vpn_portal_config") {
                 Toggle(

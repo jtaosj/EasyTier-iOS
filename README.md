@@ -14,7 +14,11 @@ This is an iOS/macOS client for EasyTier VPN. It provides a user-friendly interf
 
 ### Installation
 
-You can join our [TestFlight](https://testflight.apple.com/join/YWnDyJfM) for testing.
+Available on the App Store (except for China mainland region):
+
+<a href="https://apps.apple.com/app/easytier/id6788989728">
+  <img src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg" alt="Download on the App Store" height="40">
+</a>
 
 ### License
 

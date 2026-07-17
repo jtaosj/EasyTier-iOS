@@ -253,8 +253,8 @@ private struct ACLChainEditorView: View {
     }
 
     private func addRule() {
-        let nextPriority = chain.rules.map(\.priority).max().map { $0 &+ 1 } ?? 0
-        chain.rules.append(ACLRule(priority: nextPriority))
+        chain.rules.append(ACLRule())
+        normalizePriorities()
     }
 
     private func removeRules(at offsets: IndexSet) {

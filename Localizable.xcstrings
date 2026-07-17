@@ -24,7 +24,8 @@
             "value" : "%1$@\n\n%2$@"
           }
         }
-      }
+      },
+      "shouldTranslate" : false
     },
     "%@ ms" : {
       "shouldTranslate" : false
@@ -2899,10 +2900,10 @@
       }
     },
     "ICMP" : {
-
+      "shouldTranslate" : false
     },
     "ICMPv6" : {
-
+      "shouldTranslate" : false
     },
     "include_all_networks" : {
       "localizations" : {
@@ -2989,13 +2990,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Limit the total receive bandwidth for the whole instance. Unit: bytes per second.\nLeave blank for no limit."
+            "value" : "Limit the total receive bandwidth for the whole instance. Unit: bytes per second. Leave blank for no limit."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "限制当前实例整体入站流量的总接收速率，单位为字节每秒。\n留空表示不限速。"
+            "value" : "限制当前实例整体入站流量的总接收速率，单位为字节每秒。留空表示不限速。"
           }
         }
       }
@@ -3380,6 +3381,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本地地址"
+          }
+        }
+      }
+    },
+    "local_private_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local Private Key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地私钥"
+          }
+        }
+      }
+    },
+    "local_public_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local Public Key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本地公钥"
           }
         }
       }
@@ -4970,6 +5003,102 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "搜索域名"
+          }
+        }
+      }
+    },
+    "secure_mode" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secure Mode"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全模式"
+          }
+        }
+      }
+    },
+    "secure_mode_error.invalid_private_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The secure mode private key must be a valid Base64-encoded 32-byte X25519 key."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全模式私钥必须是有效的 Base64 编码 32 字节 X25519 密钥。"
+          }
+        }
+      }
+    },
+    "secure_mode_error.invalid_public_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The secure mode public key must be a valid Base64-encoded 32-byte X25519 key."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全模式公钥必须是有效的 Base64 编码 32 字节 X25519 密钥。"
+          }
+        }
+      }
+    },
+    "secure_mode_error.public_key_mismatch" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The secure mode public key does not match the private key."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "安全模式公钥与私钥不匹配。"
+          }
+        }
+      }
+    },
+    "secure_mode_error.public_key_without_private_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A secure mode private key is required when a public key is provided."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提供安全模式公钥时必须同时提供私钥。"
+          }
+        }
+      }
+    },
+    "secure_mode_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "If the private key is left empty, a key pair will be generated automatically and saved to this profile. If the public key is left empty, it will be derived from the private key and saved."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "私钥留空时，将自动生成密钥对并保存到此配置；公钥留空时，将从私钥派生并保存。"
           }
         }
       }

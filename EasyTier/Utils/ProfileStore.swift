@@ -255,6 +255,8 @@ struct ProfileDocument: FileDocument {
     }
 
     private static func encode(_ profile: NetworkProfile) throws -> Data {
+        var profile = profile
+        try profile.prepareSecureModeKeys()
         let config = profile.toConfig()
         guard let encoded = try TOMLEncoder().encode(config).string else {
             throw ProfileStoreError.encodingProducedNoString
@@ -386,6 +388,7 @@ final class ProfileSession: ObservableObject, Equatable {
                 profileStoreLogger.error("document in conflict: \(self.fileURL.path)")
                 throw ProfileStoreError.conflict(self.fileURL)
             }
+            try self.document.profile.prepareSecureModeKeys()
             try self.document.save(to: self.fileURL)
             self.notifyConflictIfNeeded()
         }
@@ -499,6 +502,8 @@ enum ProfileStore {
 
     static func save(_ profile: NetworkProfile, named configName: String) throws {
         let fileURL = try fileURL(forConfigName: configName)
+        var profile = profile
+        try profile.prepareSecureModeKeys()
         let config = profile.toConfig()
         guard let encoded = try TOMLEncoder().encode(config).string else {
             throw ProfileStoreError.encodingProducedNoString

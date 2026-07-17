@@ -9,6 +9,47 @@ import EasyTierShared
 private let dashboardLogger = Logger(subsystem: APP_BUNDLE_ID, category: "main.dashboard")
 private let autoSaveInterval: UInt64 = 1_200_000_000
 
+private struct ProfileTextDraft: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
+private struct ProfileTextEditor: View {
+    @State private var text: String
+
+    let onCancel: () -> Void
+    let onSave: (String) -> Void
+
+    init(text: String, onCancel: @escaping () -> Void, onSave: @escaping (String) -> Void) {
+        _text = State(initialValue: text)
+        self.onCancel = onCancel
+        self.onSave = onSave
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                TextEditor(text: $text)
+                    .font(.system(.body, design: .monospaced))
+                    .padding(8)
+            }
+            .navigationTitle("edit_config")
+            .adaptiveNavigationBarTitleInline()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("common.cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("save") {
+                        onSave(text)
+                    }
+                    .buttonStyle(.borderedProminent)
+                }
+            }
+        }
+    }
+}
+
 struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     @Environment(\.scenePhase) var scenePhase
     @ObservedObject var manager: Manager
@@ -31,8 +72,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
 #if os(iOS)
     @State var exportURL: IdentifiableURL?
 #endif
-    @State var showEditSheet = false
-    @State var editText = ""
+    @State private var editDraft: ProfileTextDraft?
 
     @State var errorMessage: TextItem?
     @State var showConflictAlert = false
@@ -99,8 +139,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 guard await closeSelectedSession() else { return }
                 try ProfileStore.save(profile, named: sanitizedName)
                 let session = try await ProfileStore.openSession(named: sanitizedName)
-                selectedSession.session = session
-                currentProfile = session.document.profile
+                try await activateSession(session)
             } catch {
                 dashboardLogger.error("create profile failed: \(error)")
                 errorMessage = .init(error.localizedDescription)
@@ -306,13 +345,13 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                             if isConnected {
                                 await manager.disconnect()
                             } else {
-                                do {
-                                    let options = try NetworkExtensionManager.generateOptions(currentProfile)
-                                    NetworkExtensionManager.saveOptions(options)
-                                    try await manager.connect()
-                                } catch {
-                                    dashboardLogger.error("connect failed: \(error)")
-                                    errorMessage = .init(error.localizedDescription)
+                                if await saveProfile() {
+                                    do {
+                                        try await manager.connect()
+                                    } catch {
+                                        dashboardLogger.error("connect failed: \(error)")
+                                        errorMessage = .init(error.localizedDescription)
+                                    }
                                 }
                             }
                             isLocalPending = false
@@ -341,9 +380,6 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                     currentProfile = session.document.profile
                 } else if let lastSelected {
                     await loadProfile(lastSelected)
-                    if let options = try? NetworkExtensionManager.generateOptions(currentProfile) {
-                        NetworkExtensionManager.saveOptions(options)
-                    }
                 }
             }
             // Register Darwin notification observer for tunnel errors
@@ -393,28 +429,11 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         }
         .sheet(isPresented: $showManageSheet) {
             manageSheet
-                .sheet(isPresented: $showEditSheet) {
-                    NavigationStack {
-                        VStack(spacing: 0) {
-                            TextEditor(text: $editText)
-                                .font(.system(.body, design: .monospaced))
-                                .padding(8)
-                        }
-                        .navigationTitle("edit_config")
-                        .adaptiveNavigationBarTitleInline()
-                        .toolbar {
-                            ToolbarItem(placement: .cancellationAction) {
-                                Button("common.cancel") {
-                                    showEditSheet = false
-                                }
-                            }
-                            ToolbarItem(placement: .confirmationAction) {
-                                Button("save") {
-                                    saveEditInText()
-                                }
-                                .buttonStyle(.borderedProminent)
-                            }
-                        }
+                .sheet(item: $editDraft) { draft in
+                    ProfileTextEditor(text: draft.text) {
+                        editDraft = nil
+                    } onSave: { text in
+                        saveEditInText(text)
                     }
                 }
 #if os(iOS)
@@ -466,12 +485,28 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     }
     
     @MainActor
+    private func activateSession(_ session: ProfileSession) async throws {
+        do {
+            var profile = session.document.profile
+            let options = try NetworkExtensionManager.generateOptions(&profile)
+            session.document.profile = profile
+            try await session.save()
+            NetworkExtensionManager.saveOptions(options)
+            selectedSession.session = session
+            currentProfile = profile
+            lastSelected = session.name
+        } catch {
+            await session.close()
+            throw error
+        }
+    }
+
+    @MainActor
     private func loadProfile(_ named: String) async {
         guard await closeSelectedSession() else { return }
         do {
             let session = try await ProfileStore.openSession(named: named)
-            selectedSession.session = session
-            currentProfile = session.document.profile
+            try await activateSession(session)
         } catch {
             dashboardLogger.error("load profile failed: \(error)")
             if let conflict = error as? ProfileStoreError,
@@ -487,14 +522,21 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     @MainActor
     @discardableResult
     private func saveProfile(saveOptions: Bool = true) async -> Bool {
-        if saveOptions,
-           let session = selectedSession.session,
-           let options = try? NetworkExtensionManager.generateOptions(session.document.profile) {
-            NetworkExtensionManager.saveOptions(options)
-        }
         if let session = selectedSession.session {
             do {
+                try currentProfile.prepareSecureModeKeys()
+                session.document.profile = currentProfile
+                let options: EasyTierOptions?
+                if saveOptions {
+                    options = try NetworkExtensionManager.generateOptions(&session.document.profile)
+                    currentProfile = session.document.profile
+                } else {
+                    options = nil
+                }
                 try await session.save()
+                if let options {
+                    NetworkExtensionManager.saveOptions(options)
+                }
             } catch {
                 dashboardLogger.error("save failed: \(error)")
                 if let conflict = error as? ProfileStoreError,
@@ -526,8 +568,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 guard await closeSelectedSession() else { return }
                 try ProfileStore.save(profile, named: configName)
                 let session = try await ProfileStore.openSession(named: configName)
-                selectedSession.session = session
-                currentProfile = session.document.profile
+                try await activateSession(session)
             } catch {
                 dashboardLogger.error("import failed: \(error)")
                 errorMessage = .init(error.localizedDescription)
@@ -565,12 +606,13 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 return
             }
             do {
+                try currentProfile.prepareSecureModeKeys()
+                selectedSession.session?.document.profile = currentProfile
                 let config = currentProfile.toConfig()
                 guard let encoded = try TOMLEncoder().encode(config).string else {
                     throw ProfileStoreError.encodingProducedNoString
                 }
-                editText = encoded
-                showEditSheet = true
+                editDraft = ProfileTextDraft(text: encoded)
             } catch {
                 dashboardLogger.error("edit load failed: \(error)")
                 errorMessage = .init(error.localizedDescription)
@@ -578,15 +620,15 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         }
     }
 
-    private func saveEditInText() {
+    private func saveEditInText(_ text: String) {
         Task { @MainActor in
             do {
-                let config = try TOMLDecoder().decode(NetworkConfig.self, from: editText)
+                let config = try TOMLDecoder().decode(NetworkConfig.self, from: text)
                 let profile = NetworkProfile(from: config)
                 currentProfile = profile
                 selectedSession.session?.document.profile = profile
                 guard await saveProfile() else { return }
-                showEditSheet = false
+                editDraft = nil
             } catch {
                 dashboardLogger.error("edit save failed: \(error)")
                 errorMessage = .init(error.localizedDescription)
@@ -688,6 +730,10 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
         }
         selectedSession.session = nil
         currentProfile = NetworkProfile()
+        lastSelected = nil
+        let defaults = UserDefaults(suiteName: APP_GROUP_ID)
+        defaults?.removeObject(forKey: "VPNConfig")
+        defaults?.synchronize()
         return true
     }
 

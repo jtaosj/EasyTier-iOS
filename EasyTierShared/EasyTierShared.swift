@@ -143,7 +143,18 @@ public enum ProviderCommand: String, Codable, CaseIterable {
     case lastNetworkSettings = "last_network_settings"
 }
 
-public func connectWithManager(_ manager: NETunnelProviderManager, logger: Logger? = nil, completionHandler: (@Sendable ((any Error)?) -> Void)? = nil) {
+public enum TunnelManagerError: LocalizedError {
+    case unavailable
+
+    public var errorDescription: String? {
+        switch self {
+        case .unavailable:
+            return "EasyTier VPN configuration is unavailable."
+        }
+    }
+}
+
+private func configureManagerForConnection(_ manager: NETunnelProviderManager, logger: Logger?) {
     manager.isEnabled = true
     if let defaults = UserDefaults(suiteName: APP_GROUP_ID) {
         manager.protocolConfiguration?.includeAllNetworks = defaults.bool(forKey: "includeAllNetworks")
@@ -160,15 +171,26 @@ public func connectWithManager(_ manager: NETunnelProviderManager, logger: Logge
             logger.debug("connect with protocol configuration: \(manager.protocolConfiguration)")
         }
     }
+}
+
+public func connectWithManager(_ manager: NETunnelProviderManager, logger: Logger? = nil) async throws {
+    configureManagerForConnection(manager, logger: logger)
+    try await manager.saveToPreferences()
+    try manager.connection.startVPNTunnel()
+}
+
+public func connectWithManager(_ manager: NETunnelProviderManager, logger: Logger? = nil, completionHandler: (@Sendable ((any Error)?) -> Void)? = nil) {
+    configureManagerForConnection(manager, logger: logger)
     manager.saveToPreferences() { error in
         if let error {
             completionHandler?(error)
-        } else {
-            do {
-                try manager.connection.startVPNTunnel()
-            } catch {
-                completionHandler?(error)
-            }
+            return
+        }
+        do {
+            try manager.connection.startVPNTunnel()
+        } catch {
+            completionHandler?(error)
+            return
         }
         completionHandler?(nil)
     }

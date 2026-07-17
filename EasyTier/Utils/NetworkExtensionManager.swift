@@ -170,7 +170,8 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
         }
     }
     
-    static func generateOptions(_ profile: NetworkProfile) throws -> EasyTierOptions {
+    static func generateOptions(_ profile: inout NetworkProfile) throws -> EasyTierOptions {
+        try profile.prepareSecureModeKeys()
         var options = EasyTierOptions()
         var config = profile.toConfig()
         if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {
@@ -246,15 +247,7 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
         }
 
         do {
-            let _: Void = try await withCheckedThrowingContinuation { continuation in
-                connectWithManager(manager, logger: Self.logger) { error in
-                    if let error {
-                        continuation.resume(throwing: error)
-                    } else {
-                        continuation.resume()
-                    }
-                }
-            }
+            try await connectWithManager(manager, logger: Self.logger)
         } catch {
             Self.logger.error("connect() start vpn tunnel failed: \(String(describing: error))")
             throw error
