@@ -2921,6 +2921,22 @@
         }
       }
     },
+    "initial_node" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Initial Node"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "初始节点"
+          }
+        }
+      }
+    },
     "initial_nodes" : {
       "localizations" : {
         "en" : {
@@ -4364,6 +4380,54 @@
         }
       }
     },
+    "peer_public_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remote Public Key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "远端公钥"
+          }
+        }
+      }
+    },
+    "peer_public_key_error.invalid" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The public key for %@ must be a valid Base64-encoded 32-byte X25519 key."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "节点 %@ 的公钥必须是有效的 Base64 编码 32 字节 X25519 密钥。"
+          }
+        }
+      }
+    },
+    "peer_public_key_help" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pins the remote node's X25519 public key during the Noise handshake. It must be a Base64-encoded 32-byte key."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Noise 握手时固定远端节点的 X25519 公钥。公钥必须是 Base64 编码的 32 字节密钥。"
+          }
+        }
+      }
+    },
     "plain_text_ip_input" : {
       "localizations" : {
         "en" : {
@@ -4796,6 +4860,22 @@
         }
       }
     },
+    "remove_peer_public_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Public Key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除公钥"
+          }
+        }
+      }
+    },
     "rename" : {
       "localizations" : {
         "en" : {
@@ -5092,13 +5172,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If the private key is left empty, a key pair will be generated automatically and saved to this profile. If the public key is left empty, it will be derived from the private key and saved."
+            "value" : "If the private key is left empty, a key pair will be generated automatically and saved to this profile. The public key is derived from the private key automatically and is read-only; select it to copy."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "私钥留空时，将自动生成密钥对并保存到此配置；公钥留空时，将从私钥派生并保存。"
+            "value" : "私钥留空时，将自动生成密钥对并保存到此配置。公钥会自动从私钥派生且不可编辑，可选中复制。"
           }
         }
       }
@@ -5131,6 +5211,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "服务器"
+          }
+        }
+      }
+    },
+    "set_peer_public_key" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Set Public Key"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置公钥"
           }
         }
       }
@@ -5527,6 +5623,9 @@
           }
         }
       }
+    },
+    "URL" : {
+
     },
     "use_device_name" : {
       "localizations" : {

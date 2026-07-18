@@ -171,7 +171,7 @@ class NetworkExtensionManager: NetworkExtensionManagerProtocol {
     }
     
     static func generateOptions(_ profile: inout NetworkProfile) throws -> EasyTierOptions {
-        try profile.prepareSecureModeKeys()
+        try profile.prepareForUse()
         var options = EasyTierOptions()
         var config = profile.toConfig()
         if config.hostname == nil && UserDefaults.standard.bool(forKey: "useRealDeviceNameAsDefault") {

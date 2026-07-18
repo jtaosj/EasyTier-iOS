@@ -524,7 +524,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
     private func saveProfile(saveOptions: Bool = true) async -> Bool {
         if let session = selectedSession.session {
             do {
-                try currentProfile.prepareSecureModeKeys()
+                try currentProfile.prepareForUse()
                 session.document.profile = currentProfile
                 let options: EasyTierOptions?
                 if saveOptions {
@@ -606,7 +606,7 @@ struct DashboardView<Manager: NetworkExtensionManagerProtocol>: View {
                 return
             }
             do {
-                try currentProfile.prepareSecureModeKeys()
+                try currentProfile.prepareForUse()
                 selectedSession.session?.document.profile = currentProfile
                 let config = currentProfile.toConfig()
                 guard let encoded = try TOMLEncoder().encode(config).string else {

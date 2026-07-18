@@ -5,6 +5,7 @@ struct NetworkEditView: View {
     @Binding var profile: NetworkProfile
     @State var showProxyCIDREditor = false
     @State var editingProxyCIDR: NetworkProfile.ProxyCIDR = .init()
+    @State var editingPeerPublicKey: PeerPublicKeyEditContext?
     @State var selectedPane: EditPane?
 
     enum EditPane: Identifiable, Hashable {
@@ -14,6 +15,14 @@ struct NetworkEditView: View {
     
     var body: some View {
         AdaptiveNavigation(primaryColumn, secondaryColumn, showNav: $selectedPane)
+            .sheet(item: $editingPeerPublicKey) { context in
+                PeerPublicKeyEditor(context: context) { publicKey in
+                    if let index = profile.peerConfigs.firstIndex(where: { $0.id == context.id }) {
+                        profile.peerConfigs[index].peerPublicKey = publicKey
+                    }
+                    editingPeerPublicKey = nil
+                }
+            }
     }
     
     var primaryColumn: some View {
@@ -114,15 +123,43 @@ struct NetworkEditView: View {
             }
 
             Section {
-                ListEditor(newItemTitle: "common_text.add_initial_node", items: $profile.peerURLs, addItemFactory: { "" }, rowContent: {
-                    TextField(
-                        "example.peer_url",
-                        text: $0.text,
-                        prompt: Text("example.peer_url")
-                    )
+                ListEditor(
+                    newItemTitle: "common_text.add_initial_node",
+                    items: $profile.peerConfigs,
+                    addItemFactory: NetworkProfile.PeerSetting.init,
+                    rowActionTitle: "set_peer_public_key",
+                    rowActionSystemImage: "key.horizontal",
+                    rowActionTint: .orange,
+                    rowAction: { peer in
+                        let peer = peer.wrappedValue
+                        editingPeerPublicKey = PeerPublicKeyEditContext(
+                            id: peer.id,
+                            uri: peer.uri,
+                            publicKey: peer.peerPublicKey ?? ""
+                        )
+                    },
+                    rowContent: { peer in
+                        VStack(alignment: .leading, spacing: 4) {
+                            TextField(
+                                "example.peer_url",
+                                text: peer.uri,
+                                prompt: Text("example.peer_url")
+                            )
+                            .labelsHidden()
+                            .font(.body.monospaced())
+
+                            if let publicKey = peer.wrappedValue.peerPublicKey?
+                                .trimmingCharacters(in: .whitespacesAndNewlines),
+                               !publicKey.isEmpty {
+                                (Text("peer_public_key") + Text(verbatim: ": \(publicKey)"))
+                                    .font(.caption.monospaced())
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
                         .labelsHidden()
-                        .font(.body.monospaced())
-                })
+                    }
+                )
             } header: {
                 Text("initial_nodes")
             } footer: {
@@ -194,28 +231,31 @@ struct NetworkEditView: View {
                 )
                 if profile.enableSecureMode {
                     LabeledContent("local_private_key") {
-                        SecureField(
+                        TextField(
                             "common_text.empty",
-                            text: $profile.secureModeLocalPrivateKey,
-                            prompt: Text("common_text.empty")
+                            text: Binding(
+                                get: { profile.secureModeLocalPrivateKey },
+                                set: { profile.updateSecureModePrivateKey($0) }
+                            ),
+                            prompt: Text("common_text.empty"),
+                            axis: .vertical
                         )
                         .labelsHidden()
-                        .multilineTextAlignment(.trailing)
                         .font(.body.monospaced())
                         .adaptiveNoTextInputAutocapitalization()
                         .autocorrectionDisabled()
                     }
                     LabeledContent("local_public_key") {
-                        TextField(
-                            "common_text.empty",
-                            text: $profile.secureModeLocalPublicKey,
-                            prompt: Text("common_text.empty")
-                        )
-                        .labelsHidden()
-                        .multilineTextAlignment(.trailing)
+                        Group {
+                            if profile.secureModeLocalPublicKey.isEmpty {
+                                Text("common_text.empty")
+                                    .foregroundStyle(.secondary)
+                            } else {
+                                Text(verbatim: profile.secureModeLocalPublicKey)
+                                    .textSelection(.enabled)
+                            }
+                        }
                         .font(.body.monospaced())
-                        .adaptiveNoTextInputAutocapitalization()
-                        .autocorrectionDisabled()
                     }
                 }
             } header: {
@@ -562,6 +602,114 @@ struct NetworkEditView: View {
                 }
             }
         }
+    }
+}
+
+struct PeerPublicKeyEditContext: Identifiable {
+    let id: UUID
+    let uri: String
+    let publicKey: String
+}
+
+struct PeerPublicKeyEditor: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let context: PeerPublicKeyEditContext
+    let onSave: (String?) -> Void
+
+    @State private var publicKey: String
+
+    init(context: PeerPublicKeyEditContext, onSave: @escaping (String?) -> Void) {
+        self.context = context
+        self.onSave = onSave
+        _publicKey = State(initialValue: context.publicKey)
+    }
+
+    private var validationError: String? {
+        do {
+            _ = try NetworkProfile.normalizedPeerPublicKey(publicKey, peerURI: context.uri)
+            return nil
+        } catch {
+            return error.localizedDescription
+        }
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("initial_node") {
+                    LabeledContent("URL") {
+                        Text(context.uri)
+                            .font(.body.monospaced())
+                            .textSelection(.enabled)
+                    }
+                }
+
+                Section {
+                    TextField(
+                        "peer_public_key",
+                        text: $publicKey,
+                        prompt: Text("peer_public_key"),
+                        axis: .vertical
+                    )
+                    .labelsHidden()
+                    .font(.body.monospaced())
+                    .lineLimit(2...4)
+                    .adaptiveNoTextInputAutocapitalization()
+                    .autocorrectionDisabled()
+
+                    if let validationError {
+                        Label(validationError, systemImage: "exclamationmark.triangle.fill")
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                } header: {
+                    Text("peer_public_key")
+                } footer: {
+                    Text("peer_public_key_help")
+                }
+
+                if !context.publicKey.isEmpty {
+                    Section {
+                        Button("remove_peer_public_key", role: .destructive) {
+                            onSave(nil)
+                            dismiss()
+                        }
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("set_peer_public_key")
+            .adaptiveNavigationBarTitleInline()
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("common.cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
+                        save()
+                    } label: {
+                        Image(systemName: "checkmark")
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(
+                        publicKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ||
+                        validationError != nil
+                    )
+                }
+            }
+        }
+    }
+
+    private func save() {
+        guard let normalized = try? NetworkProfile.normalizedPeerPublicKey(
+            publicKey,
+            peerURI: context.uri
+        ) else { return }
+        onSave(normalized)
+        dismiss()
     }
 }
 

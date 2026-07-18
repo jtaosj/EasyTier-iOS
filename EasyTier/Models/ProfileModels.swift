@@ -22,6 +22,21 @@ enum SecureModeKeyError: LocalizedError {
     }
 }
 
+enum PeerPublicKeyError: LocalizedError {
+    case invalid(peerURI: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalid(let peerURI):
+            let peer = peerURI.isEmpty ? String(localized: "initial_node") : peerURI
+            return String(
+                format: String(localized: "peer_public_key_error.invalid"),
+                peer
+            )
+        }
+    }
+}
+
 struct BoolFlag: Identifiable {
     let id = UUID()
     let keyPath: WritableKeyPath<NetworkProfile, Bool>
@@ -30,6 +45,12 @@ struct BoolFlag: Identifiable {
 }
 
 nonisolated struct NetworkProfile: Identifiable, Equatable {
+    struct PeerSetting: Identifiable, Equatable {
+        var id = UUID()
+        var uri: String = ""
+        var peerPublicKey: String?
+    }
+
     struct PortForwardSetting: Codable, Hashable, Identifiable {
         var id = UUID()
         var bindAddr: String = ""
@@ -89,7 +110,7 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
     var secureModeLocalPrivateKey: String = ""
     var secureModeLocalPublicKey: String = ""
 
-    var peerURLs: [TextItem] = []
+    var peerConfigs: [PeerSetting] = []
 
     var proxyCIDRs: [ProxyCIDR] = []
 
@@ -184,9 +205,11 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
         }
 
         if let peer = config.peer, !peer.isEmpty {
-            profile.peerURLs = peer.map { .init($0.uri) }
+            profile.peerConfigs = peer.map {
+                .init(uri: $0.uri, peerPublicKey: $0.peerPublicKey)
+            }
         } else {
-            profile.peerURLs = []
+            profile.peerConfigs = []
         }
 
         if let listeners = config.listeners {
@@ -372,6 +395,34 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
         return config
     }
 
+    static func normalizedPeerPublicKey(_ value: String?, peerURI: String) throws -> String? {
+        guard let value else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        guard let decoded = Data(base64Encoded: trimmed), decoded.count == 32 else {
+            throw PeerPublicKeyError.invalid(peerURI: peerURI)
+        }
+        return decoded.base64EncodedString()
+    }
+
+    mutating func prepareForUse() throws {
+        for index in peerConfigs.indices {
+            peerConfigs[index].peerPublicKey = try Self.normalizedPeerPublicKey(
+                peerConfigs[index].peerPublicKey,
+                peerURI: peerConfigs[index].uri
+            )
+        }
+        try prepareSecureModeKeys()
+    }
+
+    mutating func updateSecureModePrivateKey(_ value: String) {
+        secureModeLocalPrivateKey = value
+        secureModeLocalPublicKey = ""
+
+        guard enableSecureMode, !value.isEmpty else { return }
+        try? prepareSecureModeKeys()
+    }
+
     mutating func prepareSecureModeKeys() throws {
         guard enableSecureMode else { return }
 
@@ -383,7 +434,8 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
             privateKey = Curve25519.KeyAgreement.PrivateKey()
             secureModeLocalPrivateKey = privateKey.rawRepresentation.base64EncodedString()
         } else {
-            guard let rawPrivateKey = Data(base64Encoded: secureModeLocalPrivateKey) else {
+            let encodedPrivateKey = secureModeLocalPrivateKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard let rawPrivateKey = Data(base64Encoded: encodedPrivateKey) else {
                 throw SecureModeKeyError.invalidPrivateKey
             }
             do {
@@ -391,6 +443,7 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
             } catch {
                 throw SecureModeKeyError.invalidPrivateKey
             }
+            secureModeLocalPrivateKey = privateKey.rawRepresentation.base64EncodedString()
         }
 
         let derivedPublicKey = privateKey.publicKey.rawRepresentation
@@ -399,7 +452,8 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
             return
         }
 
-        guard let rawPublicKey = Data(base64Encoded: secureModeLocalPublicKey) else {
+        let encodedPublicKey = secureModeLocalPublicKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let rawPublicKey = Data(base64Encoded: encodedPublicKey) else {
             throw SecureModeKeyError.invalidPublicKey
         }
         do {
@@ -410,6 +464,7 @@ nonisolated struct NetworkProfile: Identifiable, Equatable {
         guard rawPublicKey == derivedPublicKey else {
             throw SecureModeKeyError.publicKeyMismatch
         }
+        secureModeLocalPublicKey = derivedPublicKey.base64EncodedString()
     }
     
     @MainActor static let boolFlags: [BoolFlag] = [

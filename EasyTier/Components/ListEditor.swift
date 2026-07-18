@@ -9,6 +9,10 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
     var addItemAction: (() -> Void)?
     var deleteItemsAction: ((IndexSet) -> Void)?
     var showsAddButton: Bool
+    var rowActionTitle: LocalizedStringKey?
+    var rowActionSystemImage: String
+    var rowActionTint: Color
+    var rowAction: ((Binding<Element>) -> Void)?
     
     @ViewBuilder var rowContent: (Binding<Element>) -> RowContent
 
@@ -19,6 +23,10 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
         addItemAction: (() -> Void)? = nil,
         deleteItemsAction: ((IndexSet) -> Void)? = nil,
         showsAddButton: Bool = true,
+        rowActionTitle: LocalizedStringKey? = nil,
+        rowActionSystemImage: String = "ellipsis.circle",
+        rowActionTint: Color = .accentColor,
+        rowAction: ((Binding<Element>) -> Void)? = nil,
         @ViewBuilder rowContent: @escaping (Binding<Element>) -> RowContent
     ) {
         self.newItemTitle = newItemTitle
@@ -27,6 +35,10 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
         self.addItemAction = addItemAction
         self.deleteItemsAction = deleteItemsAction
         self.showsAddButton = showsAddButton
+        self.rowActionTitle = rowActionTitle
+        self.rowActionSystemImage = rowActionSystemImage
+        self.rowActionTint = rowActionTint
+        self.rowAction = rowAction
         self.rowContent = rowContent
     }
 
@@ -34,7 +46,19 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
 #if os(iOS)
         Group {
             ForEach($items) { $item in
-                rowContent($item)
+                if let rowActionTitle, let rowAction {
+                    rowContent($item)
+                        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                            Button {
+                                rowAction($item)
+                            } label: {
+                                Label(rowActionTitle, systemImage: rowActionSystemImage)
+                            }
+                            .tint(rowActionTint)
+                        }
+                } else {
+                    rowContent($item)
+                }
             }
             .onDelete(perform: deleteItem)
             .onMove(perform: moveItem)
@@ -54,6 +78,13 @@ struct ListEditor<Element, RowContent>: View where Element: Identifiable, RowCon
                 rowContent($item)
                     .frame(minHeight: 26)
                     .contextMenu {
+                        if let rowActionTitle, let rowAction {
+                            Button {
+                                rowAction($item)
+                            } label: {
+                                Label(rowActionTitle, systemImage: rowActionSystemImage)
+                            }
+                        }
                         Button(role: .destructive) {
                             if let index = items.firstIndex(where: { $item.wrappedValue.id == $0.id }) {
                                 deleteItem(at: .init(integer: index))

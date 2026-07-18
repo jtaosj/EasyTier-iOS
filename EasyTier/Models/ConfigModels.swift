@@ -283,16 +283,13 @@ nonisolated struct NetworkConfig: Codable {
             self.ipv4 = nil
         }
         
-        var existingPeers = self.peer ?? []
-        self.peer = emptyAsNil(profile.peerURLs.compactMap { item in
-            guard !item.text.isEmpty else { return nil }
-            let peerPublicKey: String?
-            if let index = existingPeers.firstIndex(where: { $0.uri == item.text }) {
-                peerPublicKey = existingPeers.remove(at: index).peerPublicKey
-            } else {
-                peerPublicKey = nil
-            }
-            return PeerConfig(uri: item.text, peerPublicKey: peerPublicKey)
+        self.peer = emptyAsNil(profile.peerConfigs.compactMap { item in
+            guard !item.uri.isEmpty else { return nil }
+            let peerPublicKey = item.peerPublicKey?.trimmingCharacters(in: .whitespacesAndNewlines)
+            return PeerConfig(
+                uri: item.uri,
+                peerPublicKey: peerPublicKey.flatMap { $0.isEmpty ? nil : $0 }
+            )
         })
         
         self.listeners = emptyAsNil(profile.listenerURLs.compactMap { $0.text.isEmpty ? nil : $0.text })
