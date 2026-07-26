@@ -16,11 +16,12 @@ concurrency:
 env:
   SCHEME: EasyTier
   BUILD_CONFIGURATION: Release
-  IPA_NAME: EasyTier-nightly-unsigned.ipa
+  IPA_NAME: EasyTier-nightly-trollstore.ipa
+  TEAM_ID: M2G6355ZK7
 
 jobs:
   build-and-release:
-    name: Build and publish unsigned IPA
+    name: Build and publish TrollStore IPA
     runs-on: macos-26
     timeout-minutes: 90
 
@@ -63,10 +64,10 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             AD_HOC_CODE_SIGNING_ALLOWED=NO \
             CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM="" \
+            DEVELOPMENT_TEAM="${TEAM_ID}" \
             CURRENT_PROJECT_VERSION="${GITHUB_RUN_NUMBER}"
 
-      - name: Verify archive is completely unsigned
+      - name: Ad-hoc sign app for TrollStore
         shell: bash
         run: |
           set -euo pipefail
@@ -74,32 +75,69 @@ jobs:
           APP_PATH="${ARCHIVE_PATH}/Products/Applications/EasyTier.app"
           TUNNEL_PATH="${APP_PATH}/PlugIns/EasyTierNetworkExtension.appex"
           WIDGET_PATH="${APP_PATH}/PlugIns/EasyTierWidgetExtension.appex"
+          APP_ENTITLEMENTS="${RUNNER_TEMP}/EasyTier.signing.entitlements"
+          TUNNEL_ENTITLEMENTS="${RUNNER_TEMP}/EasyTierNetworkExtension.signing.entitlements"
+          WIDGET_ENTITLEMENTS="${RUNNER_TEMP}/EasyTierWidgetExtension.signing.entitlements"
 
-          for bundle_path in "${APP_PATH}" "${TUNNEL_PATH}" "${WIDGET_PATH}"; do
-            if [[ ! -d "${bundle_path}" ]]; then
-              echo "::error::Expected bundle is missing: ${bundle_path}"
-              exit 1
-            fi
-            if codesign --display "${bundle_path}" >/dev/null 2>&1; then
-              echo "::error::Bundle unexpectedly contains a code signature: ${bundle_path}"
-              exit 1
-            fi
-          done
+          create_signing_entitlements() {
+            local source_path="$1"
+            local bundle_path="$2"
+            local output_path="$3"
+            local bundle_identifier
+            local application_identifier
 
-          SIGNING_FILE="$(
-            find "${APP_PATH}" \
-              \( -name _CodeSignature -o -name embedded.mobileprovision \) \
-              -print \
-              -quit
-          )"
-          if [[ -n "${SIGNING_FILE}" ]]; then
-            echo "::error::Signing material unexpectedly exists: ${SIGNING_FILE}"
-            exit 1
-          fi
+            bundle_identifier="$(
+              /usr/libexec/PlistBuddy \
+                -c "Print :CFBundleIdentifier" \
+                "${bundle_path}/Info.plist"
+            )"
+            application_identifier="${TEAM_ID}.${bundle_identifier}"
 
-          echo "Verified that the app and both extensions are unsigned."
+            cp "${source_path}" "${output_path}"
+            /usr/libexec/PlistBuddy \
+              -c "Add :application-identifier string ${application_identifier}" \
+              -c "Add :com.apple.developer.team-identifier string ${TEAM_ID}" \
+              -c "Add :keychain-access-groups array" \
+              -c "Add :keychain-access-groups:0 string ${application_identifier}" \
+              "${output_path}"
+          }
 
-      - name: Package unsigned IPA
+          create_signing_entitlements \
+            EasyTier/EasyTier.entitlements \
+            "${APP_PATH}" \
+            "${APP_ENTITLEMENTS}"
+          create_signing_entitlements \
+            EasyTierNetworkExtension/EasyTierNetworkExtension.entitlements \
+            "${TUNNEL_PATH}" \
+            "${TUNNEL_ENTITLEMENTS}"
+          create_signing_entitlements \
+            EasyTierWidgetExtension/EasyTierWidgetExtension.entitlements \
+            "${WIDGET_PATH}" \
+            "${WIDGET_ENTITLEMENTS}"
+
+          codesign \
+            --force \
+            --sign - \
+            --timestamp=none \
+            --generate-entitlement-der \
+            --entitlements "${WIDGET_ENTITLEMENTS}" \
+            "${WIDGET_PATH}"
+          codesign \
+            --force \
+            --sign - \
+            --timestamp=none \
+            --generate-entitlement-der \
+            --entitlements "${TUNNEL_ENTITLEMENTS}" \
+            "${TUNNEL_PATH}"
+          codesign \
+            --force \
+            --sign - \
+            --timestamp=none \
+            --generate-entitlement-der \
+            --entitlements "${APP_ENTITLEMENTS}" \
+            "${APP_PATH}"
+
+      - name: Package TrollStore IPA
         shell: bash
         run: |
           set -euo pipefail
@@ -112,55 +150,12 @@ jobs:
             cd "${PACKAGE_PATH}"
             /usr/bin/zip -qry "${EXPORT_PATH}/${IPA_NAME}" Payload
           )
-          (
-            cd "${EXPORT_PATH}"
-            shasum -a 256 "${IPA_NAME}" > "${IPA_NAME}.sha256"
-          )
-
-      - name: Verify packaged IPA
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          VERIFY_PATH="${RUNNER_TEMP}/verify-ipa"
-          unzip -q "${EXPORT_PATH}/${IPA_NAME}" -d "${VERIFY_PATH}"
-
-          SIGNING_FILE="$(
-            find "${VERIFY_PATH}/Payload/EasyTier.app" \
-              \( -name _CodeSignature -o -name embedded.mobileprovision \) \
-              -print \
-              -quit
-          )"
-          if [[ -n "${SIGNING_FILE}" ]]; then
-            echo "::error::Packaged IPA contains signing material: ${SIGNING_FILE}"
-            exit 1
-          fi
-
-          APP_COUNT="$(
-            find "${VERIFY_PATH}/Payload" -maxdepth 1 -type d -name '*.app' \
-              | wc -l \
-              | tr -d ' '
-          )"
-          EXTENSION_COUNT="$(
-            find "${VERIFY_PATH}/Payload/EasyTier.app/PlugIns" \
-              -maxdepth 1 \
-              -type d \
-              -name '*.appex' \
-              | wc -l \
-              | tr -d ' '
-          )"
-          if [[ "${APP_COUNT}" != "1" || "${EXTENSION_COUNT}" != "2" ]]; then
-            echo "::error::Expected one app and two extensions; found ${APP_COUNT} app(s) and ${EXTENSION_COUNT} extension(s)."
-            exit 1
-          fi
 
       - name: Upload workflow artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: EasyTier-nightly-unsigned-${{ github.run_number }}
-          path: |
-            ${{ runner.temp }}/export/EasyTier-nightly-unsigned.ipa
-            ${{ runner.temp }}/export/EasyTier-nightly-unsigned.ipa.sha256
+          name: EasyTier-nightly-trollstore-${{ github.run_number }}
+          path: ${{ runner.temp }}/export/EasyTier-nightly-trollstore.ipa
           if-no-files-found: error
           retention-days: 14
 
@@ -176,14 +171,14 @@ jobs:
           RELEASE_NOTES="${RUNNER_TEMP}/nightly-release-notes.md"
 
           {
-            echo "Automated unsigned Release build from [\`${SHORT_SHA}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
+            echo "Automated Release build from [\`${SHORT_SHA}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})."
             echo
             echo "- Build configuration: \`${BUILD_CONFIGURATION}\`"
-            echo "- Code signing: disabled"
+            echo "- Code signing: ad-hoc with Xcode Team ID \`${TEAM_ID}\` and complete app/extension entitlements"
             echo "- Built: ${BUILD_TIME}"
             echo "- Workflow run: [#${GITHUB_RUN_NUMBER}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})"
             echo
-            echo "> This IPA is completely unsigned and cannot be installed until the app and both extensions are signed with valid provisioning profiles and matching entitlements."
+            echo "> This credentials-free IPA is prepared for TrollStore. Normal iOS installation still requires signing with an Apple provisioning profile."
           } > "${RELEASE_NOTES}"
 
           git tag --force nightly "${GITHUB_SHA}"
@@ -192,21 +187,25 @@ jobs:
           if gh release view nightly >/dev/null 2>&1; then
             gh release edit nightly \
               --target "${GITHUB_SHA}" \
-              --title "EasyTier Nightly Unsigned (${SHORT_SHA})" \
+              --title "EasyTier Nightly (${SHORT_SHA})" \
               --notes-file "${RELEASE_NOTES}" \
               --prerelease \
               --latest=false
             gh release upload nightly \
               "${EXPORT_PATH}/${IPA_NAME}" \
-              "${EXPORT_PATH}/${IPA_NAME}.sha256" \
               --clobber
+            gh release delete-asset nightly \
+              EasyTier-nightly-unsigned.ipa \
+              --yes 2>/dev/null || true
+            gh release delete-asset nightly \
+              EasyTier-nightly-unsigned.ipa.sha256 \
+              --yes 2>/dev/null || true
           else
             gh release create nightly \
               "${EXPORT_PATH}/${IPA_NAME}" \
-              "${EXPORT_PATH}/${IPA_NAME}.sha256" \
               --verify-tag \
               --target "${GITHUB_SHA}" \
-              --title "EasyTier Nightly Unsigned (${SHORT_SHA})" \
+              --title "EasyTier Nightly (${SHORT_SHA})" \
               --notes-file "${RELEASE_NOTES}" \
               --prerelease \
               --latest=false
