@@ -1,12 +1,48 @@
 import EasyTierShared
 import SwiftUI
 
+#if os(macOS)
+import AppKit
+
+@MainActor
+private final class EasyTierAppDelegate: NSObject, NSApplicationDelegate {
+    var terminationHandler: (() async -> Void)?
+
+    private var terminationTask: Task<Void, Never>?
+
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        sender.setActivationPolicy(.accessory)
+        return false
+    }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard let terminationHandler else {
+            return .terminateNow
+        }
+        guard terminationTask == nil else {
+            return .terminateLater
+        }
+
+        terminationTask = Task { @MainActor in
+            await terminationHandler()
+            sender.reply(toApplicationShouldTerminate: true)
+        }
+        return .terminateLater
+    }
+}
+#endif
+
 @main
 struct EasyTierApp: App {
     #if targetEnvironment(simulator)
-        @StateObject var manager = MockNEManager()
+        @StateObject private var manager = MockNEManager()
     #else
-        @StateObject var manager = NetworkExtensionManager()
+        @StateObject private var manager = NetworkExtensionManager()
+    #endif
+
+    #if os(macOS)
+        @NSApplicationDelegateAdaptor private var appDelegate: EasyTierAppDelegate
+        @State private var isMenuBarInserted = true
     #endif
 
     init() {
@@ -31,8 +67,37 @@ struct EasyTierApp: App {
     }
 
     var body: some Scene {
+#if os(macOS)
+        Window("EasyTier", id: "main") {
+            ContentView(manager: manager)
+                .onAppear {
+                    configureTerminationHandler()
+                }
+        }
+
+        MenuBarExtra(
+            "EasyTier",
+            image: "MenuBarIcon",
+            isInserted: $isMenuBarInserted
+        ) {
+            MenuBarView(manager: manager)
+                .onAppear {
+                    configureTerminationHandler()
+                }
+        }
+        .menuBarExtraStyle(.window)
+#else
         WindowGroup {
             ContentView(manager: manager)
         }
+#endif
     }
+
+    #if os(macOS)
+        private func configureTerminationHandler() {
+            appDelegate.terminationHandler = {
+                await manager.disconnect()
+            }
+        }
+    #endif
 }
