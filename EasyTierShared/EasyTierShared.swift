@@ -23,11 +23,25 @@ public struct WebManagementOptions: Codable, Equatable {
     public var server: String
     public var machineID: String
     public var hostname: String
+    public var secureMode: Bool
 
-    public init(server: String = "", machineID: String = "", hostname: String = "") {
+    public init(server: String = "", machineID: String = "", hostname: String = "", secureMode: Bool = false) {
         self.server = server
         self.machineID = machineID
         self.hostname = hostname
+        self.secureMode = secureMode
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case server, machineID, hostname, secureMode
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        server = try container.decode(String.self, forKey: .server)
+        machineID = try container.decode(String.self, forKey: .machineID)
+        hostname = try container.decode(String.self, forKey: .hostname)
+        secureMode = try container.decodeIfPresent(Bool.self, forKey: .secureMode) ?? false
     }
 }
 
@@ -64,14 +78,16 @@ public struct EasyTierOptions: Codable {
     }
 }
 
-public enum WebManagementState: String, Codable {
+public enum TunnelInstanceState: String, Codable {
+    case idle
     case connectingServer = "connecting_server"
     case waitingConfig = "waiting_config"
+    case starting
     case running
     case error
 }
 
-public struct WebTunnelOptions: Codable, Equatable {
+public struct TunnelInstanceOptions: Codable, Equatable {
     public var ipv4: String?
     public var ipv6: String?
     public var mtu: Int?
@@ -79,32 +95,31 @@ public struct WebTunnelOptions: Codable, Equatable {
     public var magicDNS: Bool
     public var dns: [String]
 
-    public func asEasyTierOptions(logLevel: LogLevel) -> EasyTierOptions {
-        var result = EasyTierOptions()
-        result.mode = .web
+    public func applying(to source: EasyTierOptions) -> EasyTierOptions {
+        var result = source
         result.ipv4 = ipv4
         result.ipv6 = ipv6
-        result.mtu = mtu
+        // Local profiles also contain host-only defaults (effective MTU and DNS).
+        result.mtu = source.mode == .local ? (source.mtu ?? mtu) : mtu
         result.routes = routes
-        result.logLevel = logLevel
         result.magicDNS = magicDNS
-        result.dns = dns
+        result.dns = source.mode == .local ? source.dns : dns
         return result
     }
 }
 
-public struct WebManagementStatus: Codable, Equatable {
-    public var status: WebManagementState
+public struct TunnelInstanceStatus: Codable, Equatable {
+    public var status: TunnelInstanceState
     public var serverConnected: Bool
     public var instanceID: String?
     public var instanceName: String?
     public var networkName: String?
     public var generation: UInt64
     public var error: String?
-    public var options: WebTunnelOptions?
+    public var options: TunnelInstanceOptions?
 }
 
-public struct WebManagementEvent: Codable, Equatable {
+public struct TunnelInstanceEvent: Codable, Equatable {
     public var event: String
     public var instanceID: String
     public var instanceName: String
