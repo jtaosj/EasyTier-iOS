@@ -97,47 +97,60 @@ struct VPNStatusWidgetView: View {
                         .font(.caption)
                         .fontWeight(.bold)
                         .foregroundStyle(badgeColor)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background(badgeColor.opacity(0.1))
                 .clipShape(Capsule())
-                .fixedSize()
-                Spacer()
-                Text("EasyTier")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .layoutPriority(1)
+                if family != .systemSmall {
+                    Spacer(minLength: 8)
+                    Text("EasyTier")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
             }
             
             Text(entry.profileName.isEmpty ? "select_network" : LocalizedStringKey(entry.profileName))
                 .font(family == .systemSmall ? .title2.bold() : .title.bold())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
 
             if entry.isConnected {
                 Text(entry.ipAddress ?? "DHCP")
                     .font(family == .systemSmall ? .subheadline : .callout)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
             }
             
-            Spacer()
-        }
-        .overlay(alignment: .bottomTrailing) {
-            Group {
-                let text: LocalizedStringKey = entry.isConnected ? "vpn_disconnect" : "vpn_connect"
-                if #available(iOS 17.0, macOS 14.0, *) {
-                    Button(text, intent: ToggleVPNConnectionIntent())
-                } else {
-                    Button(text) {
-                        Task {
-                            _ = try? await ToggleVPNConnectionIntent().perform()
+            Spacer(minLength: 0)
+
+            HStack {
+                Spacer(minLength: 0)
+                Group {
+                    let text: LocalizedStringKey = entry.isConnected ? "vpn_disconnect" : "vpn_connect"
+                    if #available(iOS 17.0, macOS 14.0, *) {
+                        Button(text, intent: ToggleVPNConnectionIntent())
+                    } else {
+                        Button(text) {
+                            Task {
+                                _ = try? await ToggleVPNConnectionIntent().perform()
+                            }
                         }
                     }
                 }
+                .lineLimit(1)
+                .controlSize(family == .systemSmall ? .small : .regular)
+                .tint(entry.isConnected ? Color.red : Color.accentColor)
+                .buttonStyle(.borderedProminent)
+                .widgetAccentable()
             }
-            .padding(0)
-            .tint(entry.isConnected ? Color.red : Color.accentColor)
-            .buttonStyle(.borderedProminent)
-            .widgetAccentable()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .widgetBackgroundStyle()
     }
 }
